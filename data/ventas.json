@@ -1,0 +1,26 @@
+{
+  "2025": {
+    "08": [
+      {
+        "nombre": "Felix Valles",
+        "zona": "P05020",
+        "foto": "images/valles.jpg",
+        "kpi": {
+          "ventas": 120,
+          "objetivo": 150,
+          "cobertura": "80%"
+        }
+      },
+      {
+        "nombre": "Alexander Pinedo",
+        "zona": "P05021",
+        "foto": "images/pinedo.jpg",
+        "kpi": {
+          "ventas": 95,
+          "objetivo": 100,
+          "cobertura": "95%"
+        }
+      }
+    ]
+  }
+}
