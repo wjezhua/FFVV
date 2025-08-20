@@ -1,12 +1,102 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Página Web</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Fuerza de Ventas</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    .carousel img { width: 200px; height: 200px; border-radius: 50%; }
+    .kpi { margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 10px; }
+    .vigente { color: green; font-weight: bold; }
+  </style>
 </head>
 <body>
-    <h1>¡Hola, esta es mi primera página en GitHub Pages!</h1>
-    <p>Hecha paso a paso 😃</p>
+  <h1>Avances de la Fuerza de Ventas</h1>
+
+  <!-- Selectores -->
+  <label for="anio">Año:</label>
+  <select id="anio"></select>
+  <label for="mes">Mes:</label>
+  <select id="mes"></select>
+
+  <!-- Displayer de fotos -->
+  <div class="carousel">
+    <img id="foto-vendedor" src="" alt="Foto vendedor">
+    <h2 id="nombre"></h2>
+    <p id="zona"></p>
+  </div>
+
+  <!-- Resumen -->
+  <div class="kpi">
+    <p id="resumen"></p>
+    <p id="vigente"></p>
+  </div>
+
+  <script>
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    const mesActual = String(hoy.getMonth() + 1).padStart(2, "0");
+
+    // Cargar data
+    fetch("data/ventas.json")
+      .then(res => res.json())
+      .then(data => {
+        const anioSelect = document.getElementById("anio");
+        const mesSelect = document.getElementById("mes");
+
+        // Llenar selectores de años
+        Object.keys(data).forEach(anio => {
+          let opt = document.createElement("option");
+          opt.value = anio;
+          opt.textContent = anio;
+          anioSelect.appendChild(opt);
+        });
+
+        // Llenar meses (01-12)
+        for (let i = 1; i <= 12; i++) {
+          let opt = document.createElement("option");
+          opt.value = String(i).padStart(2, "0");
+          opt.textContent = i;
+          mesSelect.appendChild(opt);
+        }
+
+        // Evento al cambiar año/mes
+        function mostrar() {
+          const anio = anioSelect.value;
+          const mes = mesSelect.value;
+          const vendedores = data[anio]?.[mes];
+
+          if (!vendedores) return;
+
+          let index = 0;
+          function mostrarVendedor(v) {
+            document.getElementById("foto-vendedor").src = v.foto;
+            document.getElementById("nombre").textContent = v.nombre;
+            document.getElementById("zona").textContent = "Zona: " + v.zona;
+            document.getElementById("resumen").textContent =
+              `Ventas: ${v.kpi.ventas} / Objetivo: ${v.kpi.objetivo} (${v.kpi.cobertura})`;
+            document.getElementById("vigente").textContent =
+              (anio == anioActual && mes == mesActual) ? "📌 Mes Vigente" : "";
+          }
+
+          mostrarVendedor(vendedores[index]);
+
+          // Rotar automáticamente cada 5s
+          setInterval(() => {
+            index = (index + 1) % vendedores.length;
+            mostrarVendedor(vendedores[index]);
+          }, 5000);
+        }
+
+        anioSelect.addEventListener("change", mostrar);
+        mesSelect.addEventListener("change", mostrar);
+
+        // Seleccionar actual por defecto
+        anioSelect.value = anioActual;
+        mesSelect.value = mesActual;
+        mostrar();
+      });
+  </script>
 </body>
 </html>
