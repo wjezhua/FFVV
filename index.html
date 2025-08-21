@@ -2,157 +2,216 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fuerza de Ventas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap para diseño moderno -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background: #f5f7fa;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f6f9;
     }
     header {
-      background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC);
+      background: linear-gradient(90deg, #007bff, #4e73df);
       color: white;
-      padding: 20px;
       text-align: center;
-      margin-bottom: 20px;
+      padding: 2rem 1rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .controls {
+      text-align: center;
+      margin: 1rem;
+    }
+    .controls select {
+      padding: 0.5rem;
+      margin: 0 0.5rem;
     }
     .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin: 1rem auto;
+      padding: 1rem;
+      max-width: 700px;
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    .kpi {
+      background: #eef2f7;
+      border-radius: 10px;
+      padding: 0.5rem;
+      margin: 0.3rem;
+      text-align: center;
+    }
+    .carousel {
+      display: flex;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
+    .carousel button {
+      padding: 0.7rem 1.5rem;
+      border: none;
       border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin: 0 1rem;
+      cursor: pointer;
+      font-size: 1rem;
+      background: #007bff;
+      color: white;
+      transition: background 0.3s;
+    }
+    .carousel button:hover {
+      background: #0056b3;
     }
     .agent-photo {
-      width: 150px;
-      height: 150px;
+      width: 120px;
+      height: 120px;
       object-fit: cover;
       border-radius: 50%;
       margin: 10px auto;
       display: block;
-      border: 4px solid #0052D4;
-    }
-    .section-title {
-      font-weight: bold;
-      font-size: 1.2rem;
-      margin-top: 15px;
-      margin-bottom: 10px;
-      color: #0052D4;
-      text-align: center;
-    }
-    .kpi-box {
-      background: #eef2f7;
-      border-radius: 12px;
-      padding: 10px;
-      text-align: center;
-      margin: 5px;
-    }
-    .kpi-name {
-      font-weight: bold;
-      font-size: 0.9rem;
-      color: #333;
-    }
-    .kpi-value {
-      font-size: 0.85rem;
-      color: #666;
-    }
-    .slider-controls {
-      margin-top: 20px;
-      text-align: center;
-    }
-    .btn-nav {
-      margin: 5px;
-      border-radius: 50px;
-      padding: 10px 20px;
+      border: 3px solid #007bff;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Dashboard Fuerza de Ventas</h1>
-    <p>Seguimiento de KPIs - Comisional & Incentivos</p>
+    <p>Comisional & Incentivos</p>
   </header>
 
-  <div class="container">
-    <div id="agent-container" class="text-center"></div>
+  <div class="controls">
+    <label for="year">Año:</label>
+    <select id="year"></select>
+    <label for="month">Mes:</label>
+    <select id="month"></select>
+  </div>
 
-    <div class="slider-controls">
-      <button id="prev-btn" class="btn btn-primary btn-nav">⬅ Anterior</button>
-      <button id="next-btn" class="btn btn-primary btn-nav">Siguiente ➡</button>
-    </div>
+  <div id="content"></div>
+
+  <div class="carousel">
+    <button id="prev">⬅ Anterior</button>
+    <button id="next">Siguiente ➡</button>
   </div>
 
   <script>
-    let agentes = [];
-    let incentivos = [];
+    let ventasData = {};
+    let incentivosData = {};
+    let vendedores = [];
     let currentIndex = 0;
 
-    // Cargar ambos JSON
     async function loadData() {
-      const ventasRes = await fetch('data/ventas.json');
-  const incentivosRes = await fetch('data/incentivos.json');
-      agentes = await ventasRes.json();
-      incentivos = await incentivosRes.json();
-      showAgent(0);
+      try {
+        const ventasRes = await fetch('data/ventas.json');
+        ventasData = await ventasRes.json();
+        const incentivosRes = await fetch('data/incentivos.json');
+        incentivosData = await incentivosRes.json();
+
+        // Cargar filtros (años y meses disponibles)
+        const years = Object.keys(ventasData);
+        document.getElementById("year").innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join("");
+
+        const firstYear = years[0];
+        const months = Object.keys(ventasData[firstYear]);
+        document.getElementById("month").innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join("");
+
+        // Generar lista de vendedores del primer año/mes
+        vendedores = ventasData[firstYear][months[0]].map(v => v.nombre);
+
+        showData();
+      } catch (err) {
+        console.error("Error cargando JSON:", err);
+      }
     }
 
-    // Mostrar agente
-    function showAgent(index) {
-      if (index < 0) index = agentes.length - 1;
-      if (index >= agentes.length) index = 0;
-      currentIndex = index;
+    function showData() {
+      const year = document.getElementById("year").value;
+      const month = document.getElementById("month").value;
+      const vendedor = vendedores[currentIndex];
+      const content = document.getElementById("content");
 
-      const agente = agentes[index];
-      const incentivosAgente = incentivos.find(i =>
-        i.nombre === agente.nombre && i.mes === agente.mes && i.año === agente.año
-      );
+      // Buscar datos en ventas.json
+      const ventas = (ventasData[year] && ventasData[year][month]) 
+        ? ventasData[year][month].find(v => v.nombre === vendedor)
+        : null;
 
-      let kpiHtml = '';
-      for (const kpi in agente.kpis) {
-        const k = agente.kpis[kpi];
-        kpiHtml += `
-          <div class="col-md-4">
-            <div class="kpi-box">
-              <div class="kpi-name">${kpi}</div>
-              <div class="kpi-value">Avance: ${k.avance}</div>
-              <div class="kpi-value">Meta: ${k.meta}</div>
-              <div class="kpi-value">Porcentaje: ${k.porcentaje}%</div>
-            </div>
-          </div>`;
-      }
+      // Buscar datos en incentivos.json
+      const incentivos = (incentivosData[year] && incentivosData[year][month]) 
+        ? incentivosData[year][month].find(v => v.nombre === vendedor)
+        : null;
 
-      let kpiIncentivosHtml = '';
-      if (incentivosAgente) {
-        for (const kpi in incentivosAgente.kpis) {
-          const k = incentivosAgente.kpis[kpi];
-          kpiIncentivosHtml += `
-            <div class="col-md-4">
-              <div class="kpi-box">
-                <div class="kpi-name">${kpi}</div>
-                <div class="kpi-value">Avance: ${k.avance}</div>
-                <div class="kpi-value">Meta: ${k.meta}</div>
-                <div class="kpi-value">Porcentaje: ${k.porcentaje}%</div>
+      // Construir HTML
+      let html = "";
+      if (ventas) {
+        html += `
+        <div class="card">
+          <img src="images/${ventas.foto}" class="agent-photo">
+          <h2>${ventas.nombre} - ${ventas.zona}</h2>
+          <p>${ventas.vigente ? "📌 Mes vigente" : ""}</p>
+          <h3>Comisional</h3>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;">
+            ${Object.entries(ventas.kpis).map(([kpi, val]) => `
+              <div class="kpi">
+                <strong>${kpi}</strong><br>
+                Avance: ${val.avance}<br>
+                Meta: ${val.meta}<br>
+                Cumplimiento: ${(val.porcentaje*100).toFixed(1)}%
               </div>
-            </div>`;
-        }
+            `).join("")}
+          </div>
+        </div>`;
       }
 
-      document.getElementById('agent-container').innerHTML = `
-        <div class="card p-4">
-          <img src="${agente.foto}" class="agent-photo" alt="Foto de ${agente.nombre}">
-          <h3>${agente.nombre}</h3>
-          <p><b>Zona:</b> ${agente.zona} | <b>Mes:</b> ${agente.mes} ${agente.año} ${agente.mesVigente ? "(Mes Vigente)" : ""}</p>
-          
-          <div class="section-title">Comisional</div>
-          <div class="row">${kpiHtml}</div>
-          
-          <div class="section-title">Incentivos</div>
-          <div class="row">${kpiIncentivosHtml || "<p>No hay datos de incentivos</p>"}</div>
-        </div>
-      `;
+      if (incentivos) {
+        html += `
+        <div class="card">
+          <h3>Incentivos</h3>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;">
+            ${Object.entries(incentivos.kpis).map(([kpi, val]) => `
+              <div class="kpi">
+                <strong>${kpi}</strong><br>
+                Avance: ${val.avance}<br>
+                Meta: ${val.meta}<br>
+                Cumplimiento: ${(val.porcentaje*100).toFixed(1)}%
+              </div>
+            `).join("")}
+          </div>
+        </div>`;
+      }
+
+      content.innerHTML = html || "<p>No hay datos para este vendedor</p>";
     }
 
-    document.getElementById('prev-btn').addEventListener('click', () => showAgent(currentIndex - 1));
-    document.getElementById('next-btn').addEventListener('click', () => showAgent(currentIndex + 1));
+    document.getElementById("prev").addEventListener("click", () => {
+      currentIndex = (currentIndex - 1 + vendedores.length) % vendedores.length;
+      showData();
+    });
+
+    document.getElementById("next").addEventListener("click", () => {
+      currentIndex = (currentIndex + 1) % vendedores.length;
+      showData();
+    });
+
+    document.getElementById("year").addEventListener("change", () => {
+      const year = document.getElementById("year").value;
+      const months = Object.keys(ventasData[year]);
+      document.getElementById("month").innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join("");
+      vendedores = ventasData[year][months[0]].map(v => v.nombre);
+      currentIndex = 0;
+      showData();
+    });
+
+    document.getElementById("month").addEventListener("change", () => {
+      const year = document.getElementById("year").value;
+      const month = document.getElementById("month").value;
+      vendedores = ventasData[year][month].map(v => v.nombre);
+      currentIndex = 0;
+      showData();
+    });
 
     loadData();
   </script>
