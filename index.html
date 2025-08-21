@@ -5,77 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fuerza de Ventas</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f4f6f9;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin:0; }
     header {
-      background: linear-gradient(90deg, #007bff, #4e73df);
-      color: white;
-      text-align: center;
-      padding: 2rem 1rem;
+      background: linear-gradient(90deg,#007bff,#4e73df);
+      color:white; text-align:center; padding:1.5rem;
     }
-    header h1 {
-      margin: 0;
-      font-size: 2rem;
-    }
-    .controls {
-      text-align: center;
-      margin: 1rem;
-    }
-    .controls select {
-      padding: 0.5rem;
-      margin: 0 0.5rem;
-    }
+    header h1 { margin:0; }
+    .controls { text-align:center; margin:1rem; }
+    select { padding:0.4rem; margin:0 0.5rem; }
     .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      margin: 1rem auto;
-      padding: 1rem;
-      max-width: 700px;
+      background:white; border-radius:12px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+      max-width:700px; margin:1rem auto; padding:1rem;
     }
-    .card h2 {
-      margin-top: 0;
-      color: #007bff;
-    }
+    .card h2 { color:#007bff; margin-top:0; }
     .kpi {
-      background: #eef2f7;
-      border-radius: 10px;
-      padding: 0.5rem;
-      margin: 0.3rem;
-      text-align: center;
+      background:#eef2f7; border-radius:8px;
+      padding:0.5rem; margin:0.3rem;
+      text-align:center; flex:1 0 30%;
     }
-    .carousel {
-      display: flex;
-      justify-content: center;
-      margin: 1.5rem 0;
-    }
-    .carousel button {
-      padding: 0.7rem 1.5rem;
-      border: none;
-      border-radius: 20px;
-      margin: 0 1rem;
-      cursor: pointer;
-      font-size: 1rem;
-      background: #007bff;
-      color: white;
-      transition: background 0.3s;
-    }
-    .carousel button:hover {
-      background: #0056b3;
-    }
+    .kpi strong { display:block; color:#333; }
+    .kpi small { color:#666; }
     .agent-photo {
-      width: 120px;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 50%;
-      margin: 10px auto;
-      display: block;
-      border: 3px solid #007bff;
+      width:120px; height:120px; border-radius:50%;
+      object-fit:cover; border:3px solid #007bff;
+      display:block; margin:10px auto;
     }
+    .carousel { text-align:center; margin:1rem; }
+    .carousel button {
+      background:#007bff; color:white; border:none;
+      padding:0.6rem 1.2rem; border-radius:20px;
+      margin:0 0.5rem; cursor:pointer;
+    }
+    .carousel button:hover { background:#0056b3; }
   </style>
 </head>
 <body>
@@ -85,9 +47,9 @@
   </header>
 
   <div class="controls">
-    <label for="year">Año:</label>
+    <label>Año:</label>
     <select id="year"></select>
-    <label for="month">Mes:</label>
+    <label>Mes:</label>
     <select id="month"></select>
   </div>
 
@@ -105,113 +67,83 @@
     let currentIndex = 0;
 
     async function loadData() {
-      try {
-        const ventasRes = await fetch('data/ventas.json');
-        ventasData = await ventasRes.json();
-        const incentivosRes = await fetch('data/incentivos.json');
-        incentivosData = await incentivosRes.json();
+      const ventasRes = await fetch("data/ventas.json");
+      ventasData = await ventasRes.json();
+      const incentivosRes = await fetch("data/incentivos.json");
+      incentivosData = await incentivosRes.json();
 
-        // Cargar filtros (años y meses disponibles)
-        const years = Object.keys(ventasData);
-        document.getElementById("year").innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join("");
+      // Llenar select de años con claves del JSON
+      const years = Object.keys(ventasData);
+      document.getElementById("year").innerHTML = years.map(y => `<option>${y}</option>`).join("");
 
-        const firstYear = years[0];
-        const months = Object.keys(ventasData[firstYear]);
-        document.getElementById("month").innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join("");
+      const firstYear = years[0];
+      const months = Object.keys(ventasData[firstYear]);
+      document.getElementById("month").innerHTML = months.map(m => `<option>${m}</option>`).join("");
 
-        // Generar lista de vendedores del primer año/mes
-        vendedores = ventasData[firstYear][months[0]].map(v => v.nombre);
+      updateVendedores();
+      showData();
+    }
 
-        showData();
-      } catch (err) {
-        console.error("Error cargando JSON:", err);
-      }
+    function updateVendedores() {
+      const year = document.getElementById("year").value;
+      const month = document.getElementById("month").value;
+      vendedores = ventasData[year][month].map(v => v.nombre);
+      currentIndex = 0;
     }
 
     function showData() {
       const year = document.getElementById("year").value;
       const month = document.getElementById("month").value;
       const vendedor = vendedores[currentIndex];
-      const content = document.getElementById("content");
 
-      // Buscar datos en ventas.json
-      const ventas = (ventasData[year] && ventasData[year][month]) 
-        ? ventasData[year][month].find(v => v.nombre === vendedor)
-        : null;
+      const agente = ventasData[year][month].find(v => v.nombre === vendedor);
+      const agenteInc = incentivosData[year][month].find(v => v.nombre === vendedor);
 
-      // Buscar datos en incentivos.json
-      const incentivos = (incentivosData[year] && incentivosData[year][month]) 
-        ? incentivosData[year][month].find(v => v.nombre === vendedor)
-        : null;
-
-      // Construir HTML
       let html = "";
-      if (ventas) {
+      if (agente) {
         html += `
-        <div class="card">
-          <img src="images/${ventas.foto}" class="agent-photo">
-          <h2>${ventas.nombre} - ${ventas.zona}</h2>
-          <p>${ventas.vigente ? "📌 Mes vigente" : ""}</p>
-          <h3>Comisional</h3>
-          <div style="display:flex;flex-wrap:wrap;justify-content:center;">
-            ${Object.entries(ventas.kpis).map(([kpi, val]) => `
-              <div class="kpi">
-                <strong>${kpi}</strong><br>
-                Avance: ${val.avance}<br>
-                Meta: ${val.meta}<br>
-                Cumplimiento: ${(val.porcentaje*100).toFixed(1)}%
-              </div>
-            `).join("")}
-          </div>
-        </div>`;
+          <div class="card">
+            <img src="images/${agente.foto}" class="agent-photo">
+            <h2>${agente.nombre} - ${agente.zona}</h2>
+            <p>${agente.vigente ? "📌 Mes vigente" : ""}</p>
+            <h3>Comisional</h3>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;">
+              ${Object.entries(agente.kpis).map(([k,v])=>`
+                <div class="kpi">
+                  <strong>${k}</strong>
+                  <small>Avance: ${v.avance}</small><br>
+                  <small>Meta: ${v.meta}</small><br>
+                  <small>Porcentaje: ${(v.porcentaje*100).toFixed(1)}%</small>
+                </div>
+              `).join("")}
+            </div>
+          </div>`;
       }
 
-      if (incentivos) {
+      if (agenteInc) {
         html += `
-        <div class="card">
-          <h3>Incentivos</h3>
-          <div style="display:flex;flex-wrap:wrap;justify-content:center;">
-            ${Object.entries(incentivos.kpis).map(([kpi, val]) => `
-              <div class="kpi">
-                <strong>${kpi}</strong><br>
-                Avance: ${val.avance}<br>
-                Meta: ${val.meta}<br>
-                Cumplimiento: ${(val.porcentaje*100).toFixed(1)}%
-              </div>
-            `).join("")}
-          </div>
-        </div>`;
+          <div class="card">
+            <h3>Incentivos</h3>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;">
+              ${Object.entries(agenteInc.kpis).map(([k,v])=>`
+                <div class="kpi">
+                  <strong>${k}</strong>
+                  <small>Avance: ${v.avance}</small><br>
+                  <small>Meta: ${v.meta}</small><br>
+                  <small>Porcentaje: ${(v.porcentaje*100).toFixed(1)}%</small>
+                </div>
+              `).join("")}
+            </div>
+          </div>`;
       }
 
-      content.innerHTML = html || "<p>No hay datos para este vendedor</p>";
+      document.getElementById("content").innerHTML = html || "<p>No hay datos</p>";
     }
 
-    document.getElementById("prev").addEventListener("click", () => {
-      currentIndex = (currentIndex - 1 + vendedores.length) % vendedores.length;
-      showData();
-    });
-
-    document.getElementById("next").addEventListener("click", () => {
-      currentIndex = (currentIndex + 1) % vendedores.length;
-      showData();
-    });
-
-    document.getElementById("year").addEventListener("change", () => {
-      const year = document.getElementById("year").value;
-      const months = Object.keys(ventasData[year]);
-      document.getElementById("month").innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join("");
-      vendedores = ventasData[year][months[0]].map(v => v.nombre);
-      currentIndex = 0;
-      showData();
-    });
-
-    document.getElementById("month").addEventListener("change", () => {
-      const year = document.getElementById("year").value;
-      const month = document.getElementById("month").value;
-      vendedores = ventasData[year][month].map(v => v.nombre);
-      currentIndex = 0;
-      showData();
-    });
+    document.getElementById("year").addEventListener("change", ()=>{ updateVendedores(); showData(); });
+    document.getElementById("month").addEventListener("change", ()=>{ updateVendedores(); showData(); });
+    document.getElementById("prev").addEventListener("click", ()=>{ currentIndex=(currentIndex-1+vendedores.length)%vendedores.length; showData(); });
+    document.getElementById("next").addEventListener("click", ()=>{ currentIndex=(currentIndex+1)%vendedores.length; showData(); });
 
     loadData();
   </script>
