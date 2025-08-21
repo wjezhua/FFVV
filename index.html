@@ -88,8 +88,8 @@
 
     // Cargar ambos JSON
     async function loadData() {
-      const ventasRes = await fetch('ventas.json');
-      const incentivosRes = await fetch('incentivos.json');
+      const ventasRes = await fetch('data/ventas.json');
+  const incentivosRes = await fetch('data/incentivos.json');
       agentes = await ventasRes.json();
       incentivos = await incentivosRes.json();
       showAgent(0);
