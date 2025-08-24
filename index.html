@@ -11,10 +11,7 @@
       background: #0b1020;
       color: #fff;
     }
-    header {
-      padding: 1rem;
-      text-align: center;
-    }
+    header { padding: 1rem; text-align: center; }
     select, button {
       margin: 0.5rem;
       padding: 0.5rem 1rem;
@@ -22,27 +19,16 @@
       border: none;
       font-size: 1rem;
     }
-    button.active {
-      background: #4CAF50;
-      color: #fff;
-    }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 1rem;
-    }
+    button.active { background: #4CAF50; color: #fff; }
+    .container { max-width: 1200px; margin: auto; padding: 1rem; }
     .general-card {
       background: rgba(255,255,255,0.08);
       border-radius: 12px;
       padding: 1rem;
       margin: 1rem 0;
-      text-align: left;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .general-card h2 { margin: 0 0 .5rem; }
-    .kpis {
-      margin-top: .5rem;
-    }
     .kpi {
       background: rgba(255,255,255,0.05);
       margin: 0.25rem 0;
@@ -51,9 +37,8 @@
     }
     .kpi canvas {
       width: 100%;
-      height: 60px;
+      height: 50px !important;
       margin-top: 6px;
-      display: block;
     }
     .cards {
       display: grid;
@@ -66,9 +51,7 @@
       padding: 1rem;
       text-align: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      transition: transform 0.3s;
     }
-    .card:hover { transform: translateY(-5px); }
     .card img {
       width: 100px; height: 100px; border-radius: 50%;
       object-fit: cover; margin-bottom: 0.5rem;
@@ -91,210 +74,104 @@
   </header>
 
   <div class="container">
-    <!-- Resumen general POR KPI con minigráfico -->
     <div id="general-summary"></div>
-
-    <!-- Cards por vendedor -->
     <div id="cards" class="cards"></div>
   </div>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <script>
     const ventasURL = "data/ventas.json";
     const incentivosURL = "data/incentivos.json";
     let currentData = "ventas";
-    const charts = {}; // para almacenar y destruir gráficos previos
+    const charts = {}; // almacena gráficos por KPI
 
-    // ---------------- Utilidades ----------------
-    function formatPercent(anyVal){
-      if (anyVal === null || anyVal === undefined || anyVal === "") return "0.0%";
-      let num;
-      if (typeof anyVal === "string"){
-        const m = anyVal.match(/-?\d+(\.\d+)?/);
-        if (!m) return "0.0%";
-        num = parseFloat(m[0]);
-      } else if (typeof anyVal === "number"){
-        num = anyVal;
-      } else {
-        return "0.0%";
-      }
-      if (Math.abs(num) <= 1) num = num * 100;
-      if (!isFinite(num)) return "0.0%";
-      return num.toFixed(1) + "%";
-    }
-    const fmtNumber = (n)=> (Number(n)||0).toLocaleString('es-PE', {maximumFractionDigits:1});
-    const kpiLabel = (k)=> k; 
-    const kpiId = (k)=> "sumchart-" + k.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const fmtNumber = n => (Number(n)||0).toLocaleString('es-PE',{maximumFractionDigits:1});
+    const formatPercent = v => {
+      if (!isFinite(v)) return "0.0%";
+      let n = typeof v==="string"?parseFloat(v):Number(v);
+      if (Math.abs(n)<=1) n=n*100;
+      return n.toFixed(1)+"%";
+    };
+    const kpiId = k => "sumchart-"+k.replace(/[^a-zA-Z0-9]/g,"_");
 
-    // ---------------- Resumen general POR KPI ----------------
     function renderGeneralByKPI(vendedores, year, month){
-      const totales = {};
-      vendedores.forEach(v => {
-        const kpis = v.kpis || {};
-        Object.entries(kpis).forEach(([name, vals]) => {
-          const a = Number(vals.avance) || 0;
-          const m = Number(vals.meta) || 0;
-          if (!totales[name]) totales[name] = {avance:0, meta:0};
-          totales[name].avance += a;
-          totales[name].meta += m;
+      const totales={};
+      vendedores.forEach(v=>{
+        Object.entries(v.kpis||{}).forEach(([k,vals])=>{
+          if(!totales[k]) totales[k]={avance:0,meta:0};
+          totales[k].avance += Number(vals.avance)||0;
+          totales[k].meta += Number(vals.meta)||0;
         });
       });
 
-      const cont = document.getElementById("general-summary");
-      const nombresKPI = Object.keys(totales).sort();
+      const cont=document.getElementById("general-summary");
+      const keys=Object.keys(totales);
+      if(keys.length===0){cont.innerHTML="";return;}
 
-      if (nombresKPI.length === 0){
-        cont.innerHTML = `<div class="general-card"><h2>TOTAL POR KPI ${month}/${year}</h2><div class="kpis">Sin información</div></div>`;
-        return;
-      }
+      let html=`<div class="general-card"><h2>TOTAL POR KPI ${month}/${year}</h2>`;
+      keys.forEach(k=>{
+        const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
+        html+=`<div class="kpi"><strong>${k}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${p.toFixed(1)}%<canvas id="${kpiId(k)}"></canvas></div>`;
+      });
+      html+=`</div>`;
+      cont.innerHTML=html;
 
-      let html = `<div class="general-card">
-        <h2>TOTAL POR KPI ${month}/${year}</h2>
-        <div class="kpis">`;
-
-      for (const k of nombresKPI){
-        const a = totales[k].avance;
-        const m = totales[k].meta;
-        const pct = m > 0 ? (a/m)*100 : 0;
-        html += `
-          <div class="kpi">
-            <strong>${kpiLabel(k)}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${pct.toFixed(1)}%
-            <canvas id="${kpiId(k)}"></canvas>
-          </div>`;
-      }
-
-      html += `</div></div>`;
-      cont.innerHTML = html;
-
-      // Graficar cada KPI
-      for (const k of nombresKPI){
-        const a = totales[k].avance;
-        const m = totales[k].meta;
-        const pct = m > 0 ? (a/m)*100 : 0;
-        const id = kpiId(k);
-        const ctx = document.getElementById(id);
-
-        if (charts[id]) { charts[id].destroy(); } // destruir gráfico previo si existe
-
-        charts[id] = new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: ["Inicio", "Meta"],
-            datasets: [{
-              label: "Avance %",
-              data: [0, pct],
-              borderColor: "#4CAF50",
-              borderWidth: 2,
-              fill: false,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 800 },
-            plugins: {
-              legend: { display: true, labels: { color: "#fff", font: { size: 10 } } },
-              tooltip: { enabled: true }
+      // dibujar charts
+      keys.forEach(k=>{
+        const id=kpiId(k);
+        const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
+        if(charts[id]){charts[id].destroy();}
+        const ctx=document.getElementById(id);
+        charts[id]=new Chart(ctx,{
+          type:"line",
+          data:{labels:["0%","100%"],datasets:[{label:"Avance",data:[0,p],borderColor:"#4CAF50",tension:0.4,fill:false}]},
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false},tooltip:{enabled:true}},
+            scales:{
+              x:{display:false},
+              y:{min:0,max:100,ticks:{color:"#fff",stepSize:20,callback:v=>v+"%"}}
             },
-            scales: {
-              x: { display: false },
-              y: {
-                min: 0, max: 100,
-                ticks: { color: "#fff", stepSize: 20, callback: v=> v+"%" },
-                grid: { color: "rgba(255,255,255,0.1)" }
-              }
-            },
-            elements: { point: { radius: 3, backgroundColor: "#4CAF50" } }
+            elements:{point:{radius:2}}
           }
         });
-      }
+      });
     }
 
-    // ---------------- Cards por vendedor ----------------
-    function renderCards(vendedores, year, month){
-      renderGeneralByKPI(vendedores, year, month);
-      const cardsDiv = document.getElementById("cards");
-      cardsDiv.innerHTML = "";
-
-      vendedores.forEach(v => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const vigenteTxt = v.vigente ? "<em>Mes en curso</em>" : "";
-        card.innerHTML = `
-          <img src="images/${(v.foto||'').trim()}" alt="${v.nombre}">
-          <h3>${v.nombre}</h3>
-          <p>${vigenteTxt}</p>
-          <div class="kpis"></div>
-        `;
-        const kpisDiv = card.querySelector(".kpis");
-        const kpis = v.kpis || {};
-        Object.entries(kpis).forEach(([k, vals]) => {
-          const a = fmtNumber(vals.avance);
-          const m = fmtNumber(vals.meta);
-          const p = formatPercent(vals.porcentaje);
-          const row = document.createElement("div");
-          row.className = "kpi";
-          row.innerHTML = `<strong>${kpiLabel(k)}</strong>: ${a} de ${m} - ${p}`;
-          kpisDiv.appendChild(row);
+    function renderCards(vendedores,year,month){
+      renderGeneralByKPI(vendedores,year,month);
+      const div=document.getElementById("cards");div.innerHTML="";
+      vendedores.forEach(v=>{
+        const c=document.createElement("div");c.className="card";
+        const vigente=v.vigente?"<em>Mes en curso</em>":"";
+        c.innerHTML=`<img src="images/${v.foto}" alt="${v.nombre}"><h3>${v.nombre}</h3><p>${vigente}</p><div class="kpis"></div>`;
+        const kp=c.querySelector(".kpis");
+        Object.entries(v.kpis||{}).forEach(([k,vals])=>{
+          kp.innerHTML+=`<div class="kpi"><strong>${k}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${formatPercent(vals.porcentaje)}</div>`;
         });
-        cardsDiv.appendChild(card);
+        div.appendChild(c);
       });
     }
 
-    // ---------------- Carga de datos ----------------
     async function loadData(){
-      const year = document.getElementById("year").value;
-      const month = document.getElementById("month").value;
-      const url = currentData === "ventas" ? ventasURL : incentivosURL;
-      const res = await fetch(url, {cache: "no-store"});
-      const data = await res.json();
-      const vendedores = data?.[year]?.[month] || [];
-      renderCards(vendedores, year, month);
+      const y=document.getElementById("year").value;
+      const m=document.getElementById("month").value;
+      const url=currentData==="ventas"?ventasURL:incentivosURL;
+      const data=await (await fetch(url)).json();
+      const vendedores=data?.[y]?.[m]||[];
+      renderCards(vendedores,y,m);
     }
 
-    // ---------------- Init ----------------
     function init(){
-      const now = new Date();
-      const ySelect = document.getElementById("year");
-      const mSelect = document.getElementById("month");
-
-      for(let y = now.getFullYear()-1; y <= now.getFullYear()+1; y++){
-        const opt = document.createElement("option");
-        opt.value = String(y);
-        opt.textContent = String(y);
-        if (y === now.getFullYear()) opt.selected = true;
-        ySelect.appendChild(opt);
-      }
-      for(let m = 1; m <= 12; m++){
-        const opt = document.createElement("option");
-        opt.value = String(m).padStart(2,"0");
-        opt.textContent = String(m).padStart(2,"0");
-        if (m === (now.getMonth()+1)) opt.selected = true;
-        mSelect.appendChild(opt);
-      }
-
-      ySelect.addEventListener("change", loadData);
-      mSelect.addEventListener("change", loadData);
-
-      document.getElementById("btnComisional").addEventListener("click", () => {
-        currentData = "ventas";
-        document.getElementById("btnComisional").classList.add("active");
-        document.getElementById("btnIncentivos").classList.remove("active");
-        loadData();
-      });
-      document.getElementById("btnIncentivos").addEventListener("click", () => {
-        currentData = "incentivos";
-        document.getElementById("btnIncentivos").classList.add("active");
-        document.getElementById("btnComisional").classList.remove("active");
-        loadData();
-      });
-
+      const now=new Date();
+      const yS=document.getElementById("year"),mS=document.getElementById("month");
+      for(let y=now.getFullYear()-1;y<=now.getFullYear()+1;y++){let o=document.createElement("option");o.value=y;o.text=y;if(y===now.getFullYear())o.selected=true;yS.appendChild(o);}
+      for(let m=1;m<=12;m++){let o=document.createElement("option");o.value=String(m).padStart(2,"0");o.text=o.value;if(m===now.getMonth()+1)o.selected=true;mS.appendChild(o);}
+      yS.addEventListener("change",loadData);mS.addEventListener("change",loadData);
+      document.getElementById("btnComisional").onclick=()=>{currentData="ventas";btnComisional.classList.add("active");btnIncentivos.classList.remove("active");loadData();}
+      document.getElementById("btnIncentivos").onclick=()=>{currentData="incentivos";btnIncentivos.classList.add("active");btnComisional.classList.remove("active");loadData();}
       loadData();
     }
-
     init();
   </script>
 </body>
