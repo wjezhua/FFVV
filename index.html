@@ -37,7 +37,7 @@
     }
     .kpi canvas {
       width: 100%;
-      height: 50px !important;
+      height: 60px !important;
       margin-top: 6px;
     }
     .cards {
@@ -83,14 +83,12 @@
     const ventasURL = "data/ventas.json";
     const incentivosURL = "data/incentivos.json";
     let currentData = "ventas";
-    const charts = {}; // almacena gráficos por KPI
+    const charts = {};
 
     const fmtNumber = n => (Number(n)||0).toLocaleString('es-PE',{maximumFractionDigits:1});
-    const formatPercent = v => {
-      if (!isFinite(v)) return "0.0%";
-      let n = typeof v==="string"?parseFloat(v):Number(v);
-      if (Math.abs(n)<=1) n=n*100;
-      return n.toFixed(1)+"%";
+    const formatPercent = (a,m) => {
+      let pct = (m>0 ? (a/m*100) : 0);
+      return pct.toFixed(1) + "%";
     };
     const kpiId = k => "sumchart-"+k.replace(/[^a-zA-Z0-9]/g,"_");
 
@@ -124,15 +122,37 @@
         const ctx=document.getElementById(id);
         charts[id]=new Chart(ctx,{
           type:"line",
-          data:{labels:["0%","100%"],datasets:[{label:"Avance",data:[0,p],borderColor:"#4CAF50",tension:0.4,fill:false}]},
+          data:{
+            labels:["0%","50%","100%"],
+            datasets:[
+              {
+                label:"Avance",
+                data:[0,p,p],
+                borderColor:"#4CAF50",
+                tension:0.4,
+                fill:false
+              },
+              {
+                label:"Meta (100%)",
+                data:[100,100,100],
+                borderColor:"red",
+                borderDash:[5,5],
+                fill:false,
+                tension:0
+              }
+            ]
+          },
           options:{
             responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false},tooltip:{enabled:true}},
+            plugins:{legend:{labels:{color:"#fff"}},tooltip:{enabled:true}},
             scales:{
-              x:{display:false},
-              y:{min:0,max:100,ticks:{color:"#fff",stepSize:20,callback:v=>v+"%"}}
+              x:{display:true,ticks:{color:"#fff"}},
+              y:{
+                min:0,max:160,
+                ticks:{color:"#fff",stepSize:20,callback:v=>v+"%"}
+              }
             },
-            elements:{point:{radius:2}}
+            elements:{point:{radius:0}}
           }
         });
       });
@@ -147,7 +167,7 @@
         c.innerHTML=`<img src="images/${v.foto}" alt="${v.nombre}"><h3>${v.nombre}</h3><p>${vigente}</p><div class="kpis"></div>`;
         const kp=c.querySelector(".kpis");
         Object.entries(v.kpis||{}).forEach(([k,vals])=>{
-          kp.innerHTML+=`<div class="kpi"><strong>${k}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${formatPercent(vals.porcentaje)}</div>`;
+          kp.innerHTML+=`<div class="kpi"><strong>${k}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${formatPercent(vals.avance,vals.meta)}</div>`;
         });
         div.appendChild(c);
       });
