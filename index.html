@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Fuerza de Ventas Juanjui</title>
+  <title>Dashboard Fuerza de Ventas</title>
   <style>
     body {
       margin: 0;
@@ -36,8 +36,24 @@
       border-radius: 12px;
       padding: 1rem;
       margin: 1rem 0;
-      text-align: center;
+      text-align: left;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .general-card h2 { margin: 0 0 .5rem; }
+    .kpis {
+      margin-top: .5rem;
+    }
+    .kpi {
+      background: rgba(255,255,255,0.05);
+      margin: 0.25rem 0;
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+    .kpi canvas {
+      width: 100%;
+      height: 40px;
+      margin-top: 6px;
+      display: block;
     }
     .cards {
       display: grid;
@@ -52,32 +68,16 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       transition: transform 0.3s;
     }
-    .card:hover {
-      transform: translateY(-5px);
-    }
+    .card:hover { transform: translateY(-5px); }
     .card img {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 0.5rem;
-    }
-    .kpi {
-      background: rgba(255,255,255,0.05);
-      margin: 0.25rem 0;
-      padding: 0.5rem;
-      border-radius: 8px;
-    }
-    .kpi canvas {
-      width: 100%;
-      height: 40px;
-      margin-top: 5px;
+      width: 100px; height: 100px; border-radius: 50%;
+      object-fit: cover; margin-bottom: 0.5rem;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Dashboard Fuerza de Ventas Juanjui</h1>
+    <h1>Dashboard Fuerza de Ventas</h1>
     <div>
       <label for="year">Año:</label>
       <select id="year"></select>
@@ -91,14 +91,14 @@
   </header>
 
   <div class="container">
-    <!-- Bloque general -->
+    <!-- Resumen general POR KPI con minigráfico -->
     <div id="general-summary"></div>
 
-    <!-- Cards de vendedores -->
+    <!-- Cards por vendedor -->
     <div id="cards" class="cards"></div>
   </div>
 
-  <!-- Chart.js desde CDN -->
+  <!-- Chart.js para minigráficos -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
@@ -106,61 +106,107 @@
     const incentivosURL = "data/incentivos.json";
     let currentData = "ventas";
 
-    // ======================
-    // Utilidades
-    // ======================
+    // ---------------- Utilidades ----------------
     function formatPercent(anyVal){
-      if (anyVal === null || anyVal === undefined || anyVal === "") {
-        return "0.0%";
-      }
+      if (anyVal === null || anyVal === undefined || anyVal === "") return "0.0%";
       let num;
-      if (typeof anyVal === "string") {
+      if (typeof anyVal === "string"){
         const m = anyVal.match(/-?\d+(\.\d+)?/);
         if (!m) return "0.0%";
         num = parseFloat(m[0]);
-      } else if (typeof anyVal === "number") {
+      } else if (typeof anyVal === "number"){
         num = anyVal;
       } else {
         return "0.0%";
       }
-      if (Math.abs(num) <= 1) {
-        num = num * 100;
-      }
+      if (Math.abs(num) <= 1) num = num * 100;
       if (!isFinite(num)) return "0.0%";
       return num.toFixed(1) + "%";
     }
+    const fmtNumber = (n)=> (Number(n)||0).toLocaleString('es-PE', {maximumFractionDigits:1});
+    const kpiLabel = (k)=> k; // si quieres limpiar sufijos, ajusta aquí
+    const kpiId = (k)=> "sumchart-" + k.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    // ======================
-    // Render General
-    // ======================
-    function renderGeneral(vendedores, year, month){
-      let totalAvance = 0;
-      let totalMeta = 0;
-
+    // ---------------- Resumen general POR KPI ----------------
+    function renderGeneralByKPI(vendedores, year, month){
+      // Agregar y acumular por KPI
+      const totales = {}; // { KPI: {avance: sum, meta: sum} }
       vendedores.forEach(v => {
-        Object.values(v.kpis).forEach(kpi => {
-          totalAvance += kpi.avance || 0;
-          totalMeta += kpi.meta || 0;
+        const kpis = v.kpis || {};
+        Object.entries(kpis).forEach(([name, vals]) => {
+          const a = Number(vals.avance) || 0;
+          const m = Number(vals.meta) || 0;
+          if (!totales[name]) totales[name] = {avance:0, meta:0};
+          totales[name].avance += a;
+          totales[name].meta += m;
         });
       });
 
-      let totalPorcentaje = totalMeta > 0 ? (totalAvance / totalMeta) * 100 : 0;
+      // Construir HTML del bloque
+      const cont = document.getElementById("general-summary");
+      const nombresKPI = Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es'));
 
-      document.getElementById("general-summary").innerHTML = `
-        <div class="general-card">
-          <h2>TOTAL ${month}/${year}</h2>
-          <p><strong>Avance:</strong> ${totalAvance.toLocaleString()}</p>
-          <p><strong>Meta:</strong> ${totalMeta.toLocaleString()}</p>
-          <p><strong>Cumplimiento:</strong> ${totalPorcentaje.toFixed(1)}%</p>
-        </div>
-      `;
+      if (nombresKPI.length === 0){
+        cont.innerHTML = `<div class="general-card"><h2>TOTAL POR KPI ${month}/${year}</h2><div class="kpis">Sin información</div></div>`;
+        return;
+      }
+
+      let html = `<div class="general-card">
+        <h2>TOTAL POR KPI ${month}/${year}</h2>
+        <div class="kpis">`;
+
+      for (const k of nombresKPI){
+        const a = totales[k].avance;
+        const m = totales[k].meta;
+        const pct = m > 0 ? (a/m)*100 : 0;
+        html += `
+          <div class="kpi">
+            <strong>${kpiLabel(k)}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${pct.toFixed(1)}%
+            <canvas id="${kpiId(k)}"></canvas>
+          </div>`;
+      }
+
+      html += `</div></div>`;
+      cont.innerHTML = html;
+
+      // Pintar minigráficos 0 → porcentaje por KPI
+      for (const k of nombresKPI){
+        const a = totales[k].avance;
+        const m = totales[k].meta;
+        const pct = m > 0 ? (a/m)*100 : 0;
+        const ctx = document.getElementById(kpiId(k));
+        if (ctx){
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: [0, 100],
+              datasets: [{
+                data: [0, pct],
+                borderColor: "#4CAF50",
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3
+              }]
+            },
+            options: {
+              animation: { duration: 300 },
+              plugins: { legend: { display: false }, tooltip: { enabled: false } },
+              scales: {
+                x: { display: false },
+                y: { min: 0, max: 100, display: false }
+              },
+              elements: { point: { radius: 0 } },
+              maintainAspectRatio: false
+            }
+          });
+        }
+      }
     }
 
-    // ======================
-    // Render Cards vendedores
-    // ======================
+    // ---------------- Cards por vendedor ----------------
     function renderCards(vendedores, year, month){
-      renderGeneral(vendedores, year, month); // ⬅️ primero mostramos el total
+      // Primero el resumen general POR KPI
+      renderGeneralByKPI(vendedores, year, month);
 
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
@@ -168,93 +214,52 @@
       vendedores.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
+        const vigenteTxt = v.vigente ? "<em>Mes en curso</em>" : "";
         card.innerHTML = `
-          <img src="images/${v.foto}" alt="${v.nombre}">
+          <img src="images/${(v.foto||'').trim()}" alt="${v.nombre}">
           <h3>${v.nombre}</h3>
-          <p><em>${v.vigente ? "Mes en curso" : ""}</em></p>
+          <p>${vigenteTxt}</p>
           <div class="kpis"></div>
         `;
         const kpisDiv = card.querySelector(".kpis");
-
-        Object.entries(v.kpis).forEach(([kpiName, vals]) => {
-          const percentValue = (typeof vals.porcentaje === "string") 
-            ? parseFloat(vals.porcentaje) 
-            : (Math.abs(vals.porcentaje) <= 1 ? vals.porcentaje * 100 : vals.porcentaje);
-
-          const kpiId = `${v.zona}-${kpiName}`;
-          kpisDiv.innerHTML += `
-            <div class="kpi">
-              <strong>${kpiName.replace("_Avance","")}</strong>: 
-              ${vals.avance} de ${vals.meta} - ${formatPercent(vals.porcentaje)}
-              <canvas id="${kpiId}"></canvas>
-            </div>
-          `;
-
-          setTimeout(() => {
-            const ctx = document.getElementById(kpiId);
-            if (ctx) {
-              new Chart(ctx, {
-                type: "line",
-                data: {
-                  labels: [0, 100],
-                  datasets: [{
-                    data: [0, percentValue],
-                    borderColor: "#4CAF50",
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.3
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    x: { display: false },
-                    y: { min: 0, max: 100, display: false }
-                  },
-                  elements: { point: { radius: 0 } }
-                }
-              });
-            }
-          }, 100);
+        const kpis = v.kpis || {};
+        Object.entries(kpis).forEach(([k, vals]) => {
+          const a = fmtNumber(vals.avance);
+          const m = fmtNumber(vals.meta);
+          const p = formatPercent(vals.porcentaje);
+          const row = document.createElement("div");
+          row.className = "kpi";
+          row.innerHTML = `<strong>${kpiLabel(k)}</strong>: ${a} de ${m} - ${p}`;
+          kpisDiv.appendChild(row);
         });
         cardsDiv.appendChild(card);
       });
     }
 
-    // ======================
-    // Cargar datos JSON
-    // ======================
+    // ---------------- Carga de datos ----------------
     async function loadData(){
       const year = document.getElementById("year").value;
       const month = document.getElementById("month").value;
-
       const url = currentData === "ventas" ? ventasURL : incentivosURL;
-      const res = await fetch(url);
+      const res = await fetch(url, {cache: "no-store"});
       const data = await res.json();
-
-      const vendedores = data[year] && data[year][month] ? data[year][month] : [];
+      const vendedores = data?.[year]?.[month] || [];
       renderCards(vendedores, year, month);
     }
 
-    // ======================
-    // Inicialización
-    // ======================
+    // ---------------- Init ----------------
     function init(){
       const now = new Date();
       const ySelect = document.getElementById("year");
       const mSelect = document.getElementById("month");
 
-      // Rellenar años
       for(let y = now.getFullYear()-1; y <= now.getFullYear()+1; y++){
         const opt = document.createElement("option");
-        opt.value = y;
-        opt.textContent = y;
+        opt.value = String(y);
+        opt.textContent = String(y);
         if (y === now.getFullYear()) opt.selected = true;
         ySelect.appendChild(opt);
       }
-
-      // Rellenar meses
       for(let m = 1; m <= 12; m++){
         const opt = document.createElement("option");
         opt.value = String(m).padStart(2,"0");
@@ -272,7 +277,6 @@
         document.getElementById("btnIncentivos").classList.remove("active");
         loadData();
       });
-
       document.getElementById("btnIncentivos").addEventListener("click", () => {
         currentData = "incentivos";
         document.getElementById("btnIncentivos").classList.add("active");
