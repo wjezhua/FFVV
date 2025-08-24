@@ -282,8 +282,45 @@
         const porc = meta > 0 ? (avance/meta*100).toFixed(1) : 0;
         const div = document.createElement("div");
         div.className = "kpi-total";
-        div.innerHTML = `<strong>${kpi.replace("_Avance","")}:</strong> ${avance.toLocaleString()} de ${meta.toLocaleString()} — ${porc}%`;
+        div.innerHTML = `
+          <strong>${kpi.replace("_Avance","")}:</strong> 
+          ${avance.toLocaleString()} de ${meta.toLocaleString()} — ${porc}%
+          <canvas id="chart-${kpi}"></canvas>
+        `;
         totalesDiv.appendChild(div);
+
+        const ctx = document.getElementById(`chart-${kpi}`).getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: Array.from({length: 9}, (_, i) => i*20),
+            datasets: [
+              {
+                label: "Avance",
+                data: Array.from({length: 9}, (_, i) => (porc/160*100)*i),
+                borderColor: "limegreen",
+                borderWidth: 2,
+                fill: false,
+              },
+              {
+                label: "Meta (100%)",
+                data: Array(9).fill(100),
+                borderColor: "red",
+                borderWidth: 2,
+                borderDash: [6,4],
+                fill: false,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: "#fff" } } },
+            scales: {
+              x: { ticks: { color: "#aaa" } },
+              y: { min: 0, max: 160, ticks: { stepSize: 20, color: "#aaa" } }
+            }
+          }
+        });
       });
 
       // 👉 Cards
@@ -316,3 +353,4 @@
   </script>
 </body>
 </html>
+
