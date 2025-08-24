@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fuerza de Ventas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 📌 Librerías necesarias para PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -15,6 +16,7 @@
       color: #fff;
     }
 
+    /* 🔹 Header moderno */
     header {
       background: rgba(20, 30, 40, 0.85);
       backdrop-filter: blur(10px);
@@ -70,6 +72,7 @@
       font-weight: bold;
     }
 
+    /* 📱 Responsive móvil */
     @media (max-width: 600px) {
       header {
         padding: 10px 15px;
@@ -92,6 +95,7 @@
       }
     }
 
+    /* 🔹 Contenido */
     .container {
       padding: 20px;
     }
@@ -117,6 +121,7 @@
       max-height: 150px;
     }
 
+    /* 🔹 Cards de vendedores */
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -162,11 +167,11 @@
     }
 
     .kpi-ok {
-      color: #4caf50;
+      color: #4caf50; /* verde */
       font-weight: bold;
     }
     .kpi-bad {
-      color: #ff4c4c;
+      color: #ff4c4c; /* rojo */
       font-weight: bold;
     }
   </style>
@@ -188,13 +193,13 @@
       <select id="month"></select>
       <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
       <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
-      <!-- 👇 Botón nuevo -->
+      <!-- 📌 Nuevo botón de PDF -->
       <button onclick="exportarPDF()">📄 Exportar PDF</button>
     </div>
   </header>
 
   <!-- 🔹 Contenido -->
-  <div class="container">
+  <div class="container" id="dashboard">
     <div class="totales" id="totales"></div>
     <div class="cards" id="cards"></div>
   </div>
@@ -271,6 +276,7 @@
       const month = document.getElementById("month").value;
       const datos = dataCache[dataset][year][month];
 
+      // 👉 Totales
       const totalesDiv = document.getElementById("totales");
       totalesDiv.innerHTML = `<h2>TOTAL POR KPI ${meses[parseInt(month)-1]}/${year}</h2>`;
       const acumulados = {};
@@ -329,6 +335,7 @@
         });
       });
 
+      // 👉 Cards
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
       datos.forEach(v => {
@@ -351,26 +358,49 @@
       });
     }
 
+    // 🔹 Exportar PDF (mejorado)
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const dashboard = document.querySelector(".container");
+
+      const canvas = await html2canvas(dashboard, { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0,
+        windowWidth: document.body.scrollWidth
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
     document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
     document.getElementById("month").addEventListener("change", mostrarDatos);
 
-    // 🔹 Exportar PDF
-    async function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const dashboard = document.body;
-      const canvas = await html2canvas(dashboard, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("dashboard.pdf");
-    }
-
     init();
   </script>
+</body>
+</html>
+
 </body>
 </html>
