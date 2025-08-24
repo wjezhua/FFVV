@@ -51,7 +51,7 @@
     }
     .kpi canvas {
       width: 100%;
-      height: 40px;
+      height: 60px;
       margin-top: 6px;
       display: block;
     }
@@ -98,13 +98,14 @@
     <div id="cards" class="cards"></div>
   </div>
 
-  <!-- Chart.js para minigráficos -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     const ventasURL = "data/ventas.json";
     const incentivosURL = "data/incentivos.json";
     let currentData = "ventas";
+    const charts = {}; // para almacenar y destruir gráficos previos
 
     // ---------------- Utilidades ----------------
     function formatPercent(anyVal){
@@ -124,13 +125,12 @@
       return num.toFixed(1) + "%";
     }
     const fmtNumber = (n)=> (Number(n)||0).toLocaleString('es-PE', {maximumFractionDigits:1});
-    const kpiLabel = (k)=> k; // si quieres limpiar sufijos, ajusta aquí
+    const kpiLabel = (k)=> k; 
     const kpiId = (k)=> "sumchart-" + k.replace(/[^a-zA-Z0-9_-]/g, "_");
 
     // ---------------- Resumen general POR KPI ----------------
     function renderGeneralByKPI(vendedores, year, month){
-      // Agregar y acumular por KPI
-      const totales = {}; // { KPI: {avance: sum, meta: sum} }
+      const totales = {};
       vendedores.forEach(v => {
         const kpis = v.kpis || {};
         Object.entries(kpis).forEach(([name, vals]) => {
@@ -142,9 +142,8 @@
         });
       });
 
-      // Construir HTML del bloque
       const cont = document.getElementById("general-summary");
-      const nombresKPI = Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es'));
+      const nombresKPI = Object.keys(totales).sort();
 
       if (nombresKPI.length === 0){
         cont.innerHTML = `<div class="general-card"><h2>TOTAL POR KPI ${month}/${year}</h2><div class="kpis">Sin información</div></div>`;
@@ -169,45 +168,54 @@
       html += `</div></div>`;
       cont.innerHTML = html;
 
-      // Pintar minigráficos 0 → porcentaje por KPI
+      // Graficar cada KPI
       for (const k of nombresKPI){
         const a = totales[k].avance;
         const m = totales[k].meta;
         const pct = m > 0 ? (a/m)*100 : 0;
-        const ctx = document.getElementById(kpiId(k));
-        if (ctx){
-          new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: [0, 100],
-              datasets: [{
-                data: [0, pct],
-                borderColor: "#4CAF50",
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3
-              }]
+        const id = kpiId(k);
+        const ctx = document.getElementById(id);
+
+        if (charts[id]) { charts[id].destroy(); } // destruir gráfico previo si existe
+
+        charts[id] = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: ["Inicio", "Meta"],
+            datasets: [{
+              label: "Avance %",
+              data: [0, pct],
+              borderColor: "#4CAF50",
+              borderWidth: 2,
+              fill: false,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 800 },
+            plugins: {
+              legend: { display: true, labels: { color: "#fff", font: { size: 10 } } },
+              tooltip: { enabled: true }
             },
-            options: {
-              animation: { duration: 300 },
-              plugins: { legend: { display: false }, tooltip: { enabled: false } },
-              scales: {
-                x: { display: false },
-                y: { min: 0, max: 100, display: false }
-              },
-              elements: { point: { radius: 0 } },
-              maintainAspectRatio: false
-            }
-          });
-        }
+            scales: {
+              x: { display: false },
+              y: {
+                min: 0, max: 100,
+                ticks: { color: "#fff", stepSize: 20, callback: v=> v+"%" },
+                grid: { color: "rgba(255,255,255,0.1)" }
+              }
+            },
+            elements: { point: { radius: 3, backgroundColor: "#4CAF50" } }
+          }
+        });
       }
     }
 
     // ---------------- Cards por vendedor ----------------
     function renderCards(vendedores, year, month){
-      // Primero el resumen general POR KPI
       renderGeneralByKPI(vendedores, year, month);
-
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
 
