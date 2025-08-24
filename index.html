@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fuerza de Ventas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 📌 Librerías necesarias para PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -193,13 +192,13 @@
       <select id="month"></select>
       <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
       <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
-      <!-- 📌 Nuevo botón de PDF -->
+      <!-- 📌 Nuevo botón PDF -->
       <button onclick="exportarPDF()">📄 Exportar PDF</button>
     </div>
   </header>
 
   <!-- 🔹 Contenido -->
-  <div class="container" id="dashboard">
+  <div class="container">
     <div class="totales" id="totales"></div>
     <div class="cards" id="cards"></div>
   </div>
@@ -276,7 +275,6 @@
       const month = document.getElementById("month").value;
       const datos = dataCache[dataset][year][month];
 
-      // 👉 Totales
       const totalesDiv = document.getElementById("totales");
       totalesDiv.innerHTML = `<h2>TOTAL POR KPI ${meses[parseInt(month)-1]}/${year}</h2>`;
       const acumulados = {};
@@ -335,7 +333,6 @@
         });
       });
 
-      // 👉 Cards
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
       datos.forEach(v => {
@@ -358,49 +355,59 @@
       });
     }
 
-    // 🔹 Exportar PDF (mejorado)
-    async function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const dashboard = document.querySelector(".container");
-
-      const canvas = await html2canvas(dashboard, { 
-        scale: 2, 
-        useCORS: true,
-        scrollY: 0,
-        windowWidth: document.body.scrollWidth
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
-
-      pdf.save(`dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
-    }
-
     document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
     document.getElementById("month").addEventListener("change", mostrarDatos);
 
     init();
-  </script>
-</body>
-</html>
 
+    // 🔹 Exportar PDF con mejor diseño
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+
+      const year = document.getElementById("year").value;
+      const month = document.getElementById("month").value;
+      const titulo = `Dashboard Fuerza de Ventas — ${meses[parseInt(month)-1]} ${year}`;
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // 👉 1. Capturar PANEL GENERAL
+      const panel = document.getElementById("totales");
+      const canvasPanel = await html2canvas(panel, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#111"
+      });
+
+      const imgPanel = canvasPanel.toDataURL("image/png");
+      const panelHeight = (canvasPanel.height * pdfWidth) / canvasPanel.width;
+
+      pdf.setFontSize(14);
+      pdf.text(titulo, 10, 15);
+      pdf.addImage(imgPanel, "PNG", 0, 25, pdfWidth, panelHeight > pdfHeight-30 ? pdfHeight-30 : panelHeight);
+
+      // 👉 2. Capturar TARJETAS DE VENDEDORES (2 por página)
+      const cards = document.querySelectorAll(".card");
+
+      for (let i = 0; i < cards.length; i++) {
+        if (i % 2 === 0) pdf.addPage();
+
+        const canvasCard = await html2canvas(cards[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#111"
+        });
+
+        const imgCard = canvasCard.toDataURL("image/png");
+        const cardHeight = (canvasCard.height * (pdfWidth - 20)) / canvasCard.width;
+
+        const posY = (i % 2 === 0) ? 20 : pdfHeight/2 + 10;
+        pdf.addImage(imgCard, "PNG", 10, posY, pdfWidth - 20, cardHeight);
+      }
+
+      pdf.save(`dashboard_${year}_${month}.pdf`);
+    }
+  </script>
 </body>
 </html>
