@@ -54,6 +54,7 @@
       background: #1e1e1e;
       border-radius: 10px;
       padding: 10px;
+      height: 180px !important;
     }
     .cards-container {
       display: grid;
@@ -104,7 +105,6 @@
     let currentDataset = "ventas";
     const charts = {};
 
-    // Inicializar
     async function init(){
       dataVentas = await fetch("data/ventas.json").then(r=>r.json());
       dataIncentivos = await fetch("data/incentivos.json").then(r=>r.json());
@@ -159,7 +159,7 @@
         html+=`
           <div class="kpi">
             <strong>${k}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${p.toFixed(1)}%
-            <canvas id="${kpiId(k)}" height="120"></canvas>
+            <canvas id="${kpiId(k)}"></canvas>
           </div>`;
       });
       html+=`</div>`;
@@ -168,26 +168,25 @@
       keys.forEach(k=>{
         const id=kpiId(k);
         const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
-        if(charts[id]){charts[id].destroy();}
+        if(charts[id]) charts[id].destroy();
         const ctx=document.getElementById(id);
 
         charts[id]=new Chart(ctx,{
           type:"line",
           data:{
-            labels:[0,20,40,60,80,100,120,140,160],
+            labels:[0,100],
             datasets:[
               {
                 label:"Avance",
-                data:Array(9).fill(p),
+                data:[0,p],
                 borderColor:"#4CAF50",
-                backgroundColor:"rgba(76,175,80,0.2)",
                 borderWidth:3,
-                fill:true,
+                fill:false,
                 tension:0
               },
               {
                 label:"Meta (100%)",
-                data:Array(9).fill(100),
+                data:[0,100],
                 borderColor:"red",
                 borderDash:[6,6],
                 borderWidth:2,
@@ -205,9 +204,7 @@
             },
             scales:{
               x:{
-                min:0,max:160,
-                ticks:{stepSize:20,color:"#fff"},
-                grid:{color:"rgba(255,255,255,0.1)"}
+                display:false
               },
               y:{
                 min:0,max:160,
