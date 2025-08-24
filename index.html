@@ -115,7 +115,7 @@
 
     canvas {
       margin-top: 10px;
-      max-height: 120px;
+      max-height: 150px;
     }
 
     /* 🔹 Cards de vendedores */
@@ -217,8 +217,6 @@
       dataCache["incentivos"] = await cargarDatos("incentivos");
 
       const yearSel = document.getElementById("year");
-      const monthSel = document.getElementById("month");
-
       const years = Object.keys(dataCache["ventas"]);
       years.forEach(y => {
         const opt = document.createElement("option");
@@ -229,7 +227,6 @@
 
       yearSel.value = years[years.length-1];
       actualizarMeses();
-
       mostrarDatos();
     }
 
@@ -246,16 +243,27 @@
         monthSel.appendChild(opt);
       });
 
-      monthSel.value = months[months.length-1];
+      if (!months.includes(monthSel.value)) {
+        monthSel.value = months[months.length-1];
+      }
     }
 
     function toggleDataset(tipo) {
+      const selectedYear = document.getElementById("year").value;
+      const selectedMonth = document.getElementById("month").value;
+
       dataset = tipo;
       document.getElementById("btn-ventas").classList.remove("active");
       document.getElementById("btn-incentivos").classList.remove("active");
       document.getElementById(`btn-${tipo}`).classList.add("active");
 
       actualizarMeses();
+
+      // Restaurar selección si existe
+      if (Object.keys(dataCache[dataset][selectedYear] || {}).includes(selectedMonth)) {
+        document.getElementById("year").value = selectedYear;
+        document.getElementById("month").value = selectedMonth;
+      }
       mostrarDatos();
     }
 
@@ -297,7 +305,7 @@
             datasets: [
               {
                 label: "Avance",
-                data: Array.from({length: 9}, (_, i) => (porc/160*100)*i),
+                data: Array(9).fill(porc),
                 borderColor: "limegreen",
                 borderWidth: 2,
                 fill: false,
@@ -353,4 +361,3 @@
   </script>
 </body>
 </html>
-
