@@ -2,56 +2,60 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fuerza de Ventas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #121212;
-      color: #fff;
       margin: 0;
-      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #111;
+      color: #fff;
     }
+
+    /* 🔹 Header moderno */
     header {
-      padding: 20px;
-      background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
+      background: rgba(20, 30, 40, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    }
+    header .top-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      backdrop-filter: blur(6px);
     }
     header h1 {
       margin: 0;
-      font-size: 1.8em;
+      font-size: 1.6em;
       font-weight: 700;
+      color: #fff;
     }
     header .subtitle {
       font-size: 0.9em;
       opacity: 0.8;
+      color: #ccc;
     }
+
     .toolbar {
-      background: rgba(30,30,30,0.85);
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-      padding: 12px 15px;
-      border-bottom: 2px solid #2c2c2c;
-      position: sticky;
-      top: 70px;
-      z-index: 999;
-      backdrop-filter: blur(6px);
+      gap: 10px;
+      justify-content: flex-start;
     }
     select, button {
-      padding: 10px 14px;
+      padding: 8px 14px;
       border-radius: 8px;
       border: none;
-      font-size: 1em;
-      background: #2a2a2a;
+      font-size: 0.95em;
+      background: rgba(255,255,255,0.08);
       color: #fff;
       cursor: pointer;
       transition: all 0.3s;
@@ -64,80 +68,15 @@
       background: #007bff;
       font-weight: bold;
     }
-    .general-card {
-      background: #2a2a2a;
-      margin: 20px;
-      padding: 20px;
-      border-radius: 12px;
-    }
-    .general-card h2 {
-      margin-top: 0;
-      font-size: 1.2em;
-    }
-    .kpi {
-      margin-bottom: 25px;
-    }
-    canvas {
-      background: #1e1e1e;
-      border-radius: 10px;
-      padding: 10px;
-      height: 140px !important;
-    }
-    .cards-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 15px;
-      padding: 15px;
-    }
-    .card {
-      background: #1e1e1e;
-      border-radius: 15px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.6);
-    }
-    .card img {
-      width: 110px;
-      height: 110px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 3px solid #007bff;
-      margin-bottom: 10px;
-    }
-    .card h3 {
-      margin: 8px 0 4px;
-      font-size: 1.2em;
-    }
-    .card p {
-      font-size: 0.9em;
-      color: #aaa;
-      margin-bottom: 10px;
-    }
-    .card .kpi-item {
-      font-size: 0.9em;
-      margin: 5px 0;
-      padding: 6px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 6px;
-    }
-    .card .kpi-item strong {
-      color: #4CAF50;
-    }
 
-    /* 📱 Mejoras en móviles */
+    /* 📱 Responsive móvil */
     @media (max-width: 600px) {
       header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 15px;
+        padding: 10px 15px;
+        gap: 8px;
       }
       header h1 {
-        font-size: 1.5em;
+        font-size: 1.3em;
       }
       header .subtitle {
         font-size: 0.8em;
@@ -145,162 +84,245 @@
       .toolbar {
         flex-direction: column;
         gap: 8px;
-        padding: 10px;
       }
       select, button {
         width: 100%;
         font-size: 1em;
+        padding: 10px;
       }
-      .card img {
-        width: 90px;
-        height: 90px;
-      }
+    }
+
+    /* 🔹 Contenido */
+    .container {
+      padding: 20px;
+    }
+
+    .totales {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .totales h2 {
+      margin-top: 0;
+      font-size: 1.4em;
+    }
+
+    .kpi-total {
+      margin-bottom: 25px;
+    }
+
+    canvas {
+      margin-top: 10px;
+      max-height: 120px;
+    }
+
+    /* 🔹 Cards de vendedores */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-bottom: 12px;
+      border: 3px solid #007bff;
+    }
+
+    .card h3 {
+      margin: 8px 0;
+      font-size: 1.1em;
+    }
+
+    .kpis {
+      text-align: left;
+      font-size: 0.9em;
+      width: 100%;
+    }
+
+    .kpis p {
+      margin: 6px 0;
+      padding: 6px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
+
+  <!-- 🔹 Header -->
   <header>
-    <div>
-      <h1>Dashboard Fuerza de Ventas</h1>
-      <div class="subtitle">Seguimiento de KPIs — Comisional & Incentivos</div>
+    <div class="top-row">
+      <div>
+        <h1>Dashboard Fuerza de Ventas</h1>
+        <div class="subtitle">KPIs — Comisional & Incentivos</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label for="year">Año:</label>
+      <select id="year"></select>
+      <label for="month">Mes:</label>
+      <select id="month"></select>
+      <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
+      <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
     </div>
   </header>
 
-  <div class="toolbar">
-    <label for="year">Año:</label>
-    <select id="year"></select>
-    <label for="month">Mes:</label>
-    <select id="month"></select>
-    <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
-    <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
+  <!-- 🔹 Contenido -->
+  <div class="container">
+    <div class="totales" id="totales"></div>
+    <div class="cards" id="cards"></div>
   </div>
 
-  <div id="general-summary"></div>
-  <div class="cards-container" id="cards-container"></div>
-
   <script>
-    let dataVentas = {}, dataIncentivos = {};
-    let currentDataset = "ventas";
-    const charts = {};
-    const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const meses = [
+      "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+    ];
+    let dataset = "ventas";
+    let dataCache = {};
 
-    async function init(){
-      dataVentas = await fetch("data/ventas.json").then(r=>r.json());
-      dataIncentivos = await fetch("data/incentivos.json").then(r=>r.json());
-
-      const selYear = document.getElementById("year");
-      const years = Object.keys(dataVentas);
-      selYear.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
-      selYear.value = new Date().getFullYear();
-
-      updateMonths();
-      render();
-
-      selYear.addEventListener("change",()=>{updateMonths(); render();});
-      document.getElementById("month").addEventListener("change",render);
+    async function cargarDatos(tipo) {
+      const res = await fetch(`data/${tipo}.json`);
+      return await res.json();
     }
 
-    function updateMonths(){
-      const y=document.getElementById("year").value;
-      const data=(currentDataset==="ventas"?dataVentas:dataIncentivos);
-      const selMonth=document.getElementById("month");
-      if(!data[y]){selMonth.innerHTML="";return;}
-      const meses=Object.keys(data[y]).sort();
-      selMonth.innerHTML=meses.map(m=>{
-        const nombre=monthNames[parseInt(m,10)-1];
-        return `<option value="${m}">${nombre}</option>`;
-      }).join("");
-      selMonth.value=meses.includes((new Date().getMonth()+1).toString().padStart(2,"0")) ?
-                     (new Date().getMonth()+1).toString().padStart(2,"0") :
-                     meses[0];
-    }
+    async function init() {
+      dataCache["ventas"] = await cargarDatos("ventas");
+      dataCache["incentivos"] = await cargarDatos("incentivos");
 
-    function toggleDataset(ds){
-      currentDataset = ds;
-      document.getElementById("btn-ventas").classList.toggle("active",ds==="ventas");
-      document.getElementById("btn-incentivos").classList.toggle("active",ds==="incentivos");
-      updateMonths();
-      render();
-    }
+      const yearSel = document.getElementById("year");
+      const monthSel = document.getElementById("month");
 
-    function render(){
-      const y=document.getElementById("year").value;
-      const m=document.getElementById("month").value;
-      const data=(currentDataset==="ventas"?dataVentas:dataIncentivos);
-      const vendedores=data?.[y]?.[m]||[];
-      renderGeneralByKPI(vendedores,y,m);
-      renderCards(vendedores,y,m);
-    }
-
-    function renderGeneralByKPI(vendedores,year,month){
-      const totales={};
-      vendedores.forEach(v=>{
-        Object.entries(v.kpis||{}).forEach(([k,vals])=>{
-          if(!totales[k]) totales[k]={avance:0,meta:0};
-          totales[k].avance += Number(vals.avance)||0;
-          totales[k].meta += Number(vals.meta)||0;
-        });
+      const years = Object.keys(dataCache["ventas"]);
+      years.forEach(y => {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        yearSel.appendChild(opt);
       });
-      const cont=document.getElementById("general-summary");
-      const keys=Object.keys(totales);
-      if(keys.length===0){cont.innerHTML="";return;}
 
-      let html=`<div class="general-card"><h2>TOTAL POR KPI ${monthNames[parseInt(month)-1]} ${year}</h2>`;
-      keys.forEach(k=>{
-        const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
-        html+=`
-          <div class="kpi">
-            <strong>${k}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${p.toFixed(1)}%
-            <canvas id="${kpiId(k)}"></canvas>
-          </div>`;
+      yearSel.value = years[years.length-1];
+      actualizarMeses();
+
+      mostrarDatos();
+    }
+
+    function actualizarMeses() {
+      const yearSel = document.getElementById("year").value;
+      const monthSel = document.getElementById("month");
+      monthSel.innerHTML = "";
+
+      const months = Object.keys(dataCache[dataset][yearSel]).filter(m => dataCache[dataset][yearSel][m].length > 0);
+      months.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = meses[parseInt(m)-1];
+        monthSel.appendChild(opt);
       });
-      html+=`</div>`;
-      cont.innerHTML=html;
 
-      keys.forEach(k=>{
-        const id=kpiId(k);
-        const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
-        if(charts[id]) charts[id].destroy();
-        const ctx=document.getElementById(id);
-        charts[id]=new Chart(ctx,{
-          type:"line",
-          data:{
-            labels:[0,100],
-            datasets:[
-              {label:"Avance",data:[0,p],borderColor:"#4CAF50",borderWidth:3,fill:false,tension:0},
-              {label:"Meta (100%)",data:[0,100],borderColor:"red",borderDash:[6,6],borderWidth:2,fill:false,tension:0}
+      monthSel.value = months[months.length-1];
+    }
+
+    function toggleDataset(tipo) {
+      dataset = tipo;
+      document.getElementById("btn-ventas").classList.remove("active");
+      document.getElementById("btn-incentivos").classList.remove("active");
+      document.getElementById(`btn-${tipo}`).classList.add("active");
+
+      actualizarMeses();
+      mostrarDatos();
+    }
+
+    function mostrarDatos() {
+      const year = document.getElementById("year").value;
+      const month = document.getElementById("month").value;
+      const datos = dataCache[dataset][year][month];
+
+      // 👉 Totales
+      const totalesDiv = document.getElementById("totales");
+      totalesDiv.innerHTML = `<h2>TOTAL POR KPI ${meses[parseInt(month)-1]}/${year}</h2>`;
+      const acumulados = {};
+
+      datos.forEach(v => {
+        for (const k in v.kpis) {
+          if (!acumulados[k]) acumulados[k] = {avance:0, meta:0};
+          acumulados[k].avance += v.kpis[k].avance;
+          acumulados[k].meta += v.kpis[k].meta;
+        }
+      });
+
+      Object.keys(acumulados).forEach(kpi => {
+        const {avance, meta} = acumulados[kpi];
+        const porc = meta > 0 ? (avance/meta*100).toFixed(1) : 0;
+        const div = document.createElement("div");
+        div.className = "kpi-total";
+        div.innerHTML = `<strong>${kpi.replace("_Avance","")}:</strong> ${avance.toLocaleString()} de ${meta.toLocaleString()} — ${porc}%`;
+        totalesDiv.appendChild(div);
+
+        const canvas = document.createElement("canvas");
+        div.appendChild(canvas);
+
+        new Chart(canvas.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: Array.from({length: 9}, (_,i)=>i*20),
+            datasets: [
+              {label:"Avance", data:Array(9).fill(porc), borderColor:"lime", borderWidth:2, fill:false},
+              {label:"Meta (100%)", data:Array(9).fill(100), borderColor:"red", borderWidth:2, borderDash:[5,5], fill:false}
             ]
           },
-          options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{labels:{color:"#fff"}},tooltip:{enabled:true}},
-            scales:{x:{display:false},y:{min:0,max:160,ticks:{stepSize:20,color:"#fff"},grid:{color:"rgba(255,255,255,0.1)"}}},
-            elements:{point:{radius:0}}
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins:{legend:{labels:{color:"#fff"}}},
+            scales: {
+              x: {ticks:{color:"#ccc"}},
+              y: {min:0, max:160, ticks:{stepSize:20, color:"#ccc"}}
+            }
           }
         });
       });
-    }
 
-    function renderCards(vendedores,year,month){
-      const cont=document.getElementById("cards-container");
-      cont.innerHTML=vendedores.map(v=>{
-        let kpiHtml="";
-        for(const [k,vals] of Object.entries(v.kpis||{})){
-          const pct = vals.meta>0 ? (vals.avance/vals.meta*100) : 0;
-          kpiHtml+=`<div class="kpi-item"><strong>${k.replace(/_.*$/,"")}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${pct.toFixed(1)}%</div>`;
+      // 👉 Cards
+      const cardsDiv = document.getElementById("cards");
+      cardsDiv.innerHTML = "";
+      datos.forEach(v => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <img src="images/${v.foto}" alt="${v.nombre}">
+          <h3>${v.nombre}</h3>
+          <p><em>${v.zona}</em></p>
+          <div class="kpis"></div>
+        `;
+        const kpisDiv = card.querySelector(".kpis");
+        for (const k in v.kpis) {
+          const {avance, meta, porcentaje} = v.kpis[k];
+          kpisDiv.innerHTML += `<p><strong>${k.replace("_Avance","")}:</strong> ${avance.toLocaleString()} de ${meta.toLocaleString()} — ${(porcentaje*100).toFixed(1)}%</p>`;
         }
-        return `
-          <div class="card">
-            <img src="images/${v.foto}" alt="${v.nombre}">
-            <h3>${v.nombre}</h3>
-            <p>${v.zona} ${v.vigente?"<span style='color:lime'>(Mes en curso)</span>":""}</p>
-            ${kpiHtml}
-          </div>`;
-      }).join("");
+        cardsDiv.appendChild(card);
+      });
     }
 
-    const fmtNumber=n=>Number(n).toLocaleString("es-PE",{maximumFractionDigits:1});
-    const kpiId=k=>"chart_"+k.replace(/\W/g,"_");
+    document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
+    document.getElementById("month").addEventListener("change", mostrarDatos);
 
     init();
   </script>
