@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Fuerza de Ventas Juanjui</title>
+  <title>Dashboard Fuerza de Ventas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -13,7 +15,6 @@
       color: #fff;
     }
 
-    /* 🔹 Header moderno */
     header {
       background: rgba(20, 30, 40, 0.85);
       backdrop-filter: blur(10px);
@@ -69,7 +70,6 @@
       font-weight: bold;
     }
 
-    /* 📱 Responsive móvil */
     @media (max-width: 600px) {
       header {
         padding: 10px 15px;
@@ -92,7 +92,6 @@
       }
     }
 
-    /* 🔹 Contenido */
     .container {
       padding: 20px;
     }
@@ -118,7 +117,6 @@
       max-height: 150px;
     }
 
-    /* 🔹 Cards de vendedores */
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -164,11 +162,11 @@
     }
 
     .kpi-ok {
-      color: #4caf50; /* verde */
+      color: #4caf50;
       font-weight: bold;
     }
     .kpi-bad {
-      color: #ff4c4c; /* rojo */
+      color: #ff4c4c;
       font-weight: bold;
     }
   </style>
@@ -179,7 +177,7 @@
   <header>
     <div class="top-row">
       <div>
-        <h1>Dashboard Fuerza de Ventas Juanjui</h1>
+        <h1>Dashboard Fuerza de Ventas</h1>
         <div class="subtitle">KPIs — Comisional & Incentivos</div>
       </div>
     </div>
@@ -190,6 +188,8 @@
       <select id="month"></select>
       <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
       <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
+      <!-- 👇 Botón nuevo -->
+      <button onclick="exportarPDF()">📄 Exportar PDF</button>
     </div>
   </header>
 
@@ -259,7 +259,6 @@
 
       actualizarMeses();
 
-      // Restaurar selección si existe
       if (Object.keys(dataCache[dataset][selectedYear] || {}).includes(selectedMonth)) {
         document.getElementById("year").value = selectedYear;
         document.getElementById("month").value = selectedMonth;
@@ -272,7 +271,6 @@
       const month = document.getElementById("month").value;
       const datos = dataCache[dataset][year][month];
 
-      // 👉 Totales
       const totalesDiv = document.getElementById("totales");
       totalesDiv.innerHTML = `<h2>TOTAL POR KPI ${meses[parseInt(month)-1]}/${year}</h2>`;
       const acumulados = {};
@@ -324,14 +322,13 @@
             responsive: true,
             plugins: { legend: { labels: { color: "#fff" } } },
             scales: {
-              //x: { ticks: { color: "#aaa" } },
+              x: { ticks: { color: "#aaa" } },
               y: { min: 0, max: 160, ticks: { stepSize: 20, color: "#aaa" } }
             }
           }
         });
       });
 
-      // 👉 Cards
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
       datos.forEach(v => {
@@ -356,6 +353,22 @@
 
     document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
     document.getElementById("month").addEventListener("change", mostrarDatos);
+
+    // 🔹 Exportar PDF
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const dashboard = document.body;
+      const canvas = await html2canvas(dashboard, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("dashboard.pdf");
+    }
 
     init();
   </script>
