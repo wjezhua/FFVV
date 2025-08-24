@@ -13,33 +13,48 @@
       padding: 0;
     }
     header {
-      text-align: center;
-      padding: 20px;
-      background: linear-gradient(90deg, #1e3c72, #2a5298);
-    }
-    header h1 { margin: 0; font-size: 2.5em; }
-    header p { margin: 5px 0 0; font-size: 1.1em; }
-    .filters {
+      padding: 25px;
+      background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
       display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+      font-weight: 700;
+    }
+    header .subtitle {
+      font-size: 1em;
+      opacity: 0.8;
+    }
+    .toolbar {
+      background: #1e1e1e;
+      display: flex;
+      flex-wrap: wrap;
       justify-content: center;
       gap: 15px;
-      padding: 15px;
-      background: #1e1e1e;
+      padding: 15px 20px;
+      border-bottom: 2px solid #2c2c2c;
     }
     select, button {
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 10px 14px;
+      border-radius: 8px;
       border: none;
       font-size: 1em;
-    }
-    button {
+      background: #2a2a2a;
+      color: #fff;
       cursor: pointer;
+      transition: all 0.3s;
+    }
+    select:hover, button:hover {
       background: #007bff;
       color: #fff;
-      transition: background 0.3s;
     }
-    button:hover {
-      background: #0056b3;
+    button.active {
+      background: #007bff;
+      font-weight: bold;
     }
     .general-card {
       background: #2a2a2a;
@@ -49,7 +64,6 @@
     }
     .general-card h2 {
       margin-top: 0;
-      color: #fff;
     }
     .kpi {
       margin-bottom: 25px;
@@ -58,7 +72,7 @@
       background: #1e1e1e;
       border-radius: 10px;
       padding: 10px;
-      height: 180px !important;
+      height: 160px !important;
     }
     .cards-container {
       display: grid;
@@ -109,17 +123,19 @@
 </head>
 <body>
   <header>
-    <h1>Dashboard Fuerza de Ventas</h1>
-    <p>Seguimiento de KPIs — Comisional & Incentivos</p>
+    <div>
+      <h1>Dashboard Fuerza de Ventas</h1>
+      <div class="subtitle">Seguimiento de KPIs — Comisional & Incentivos</div>
+    </div>
   </header>
 
-  <div class="filters">
+  <div class="toolbar">
     <label for="year">Año:</label>
     <select id="year"></select>
     <label for="month">Mes:</label>
     <select id="month"></select>
-    <button onclick="toggleDataset('ventas')">Comisional</button>
-    <button onclick="toggleDataset('incentivos')">Incentivos</button>
+    <button id="btn-ventas" onclick="toggleDataset('ventas')">Comisional</button>
+    <button id="btn-incentivos" onclick="toggleDataset('incentivos')">Incentivos</button>
   </div>
 
   <div id="general-summary"></div>
@@ -129,30 +145,44 @@
     let dataVentas = {}, dataIncentivos = {};
     let currentDataset = "ventas";
     const charts = {};
+    const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
     async function init(){
       dataVentas = await fetch("data/ventas.json").then(r=>r.json());
       dataIncentivos = await fetch("data/incentivos.json").then(r=>r.json());
 
-      const years = Object.keys(dataVentas);
       const selYear = document.getElementById("year");
+      const years = Object.keys(dataVentas);
       selYear.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
       selYear.value = new Date().getFullYear();
 
-      const selMonth = document.getElementById("month");
-      selMonth.innerHTML = Array.from({length:12},(_,i)=>{
-        const m = (i+1).toString().padStart(2,"0");
-        return `<option value="${m}">${m}</option>`;
-      }).join("");
-      selMonth.value = (new Date().getMonth()+1).toString().padStart(2,"0");
-
+      updateMonths();
       render();
-      selYear.addEventListener("change",render);
-      selMonth.addEventListener("change",render);
+
+      selYear.addEventListener("change",()=>{updateMonths(); render();});
+      document.getElementById("month").addEventListener("change",render);
+    }
+
+    function updateMonths(){
+      const y=document.getElementById("year").value;
+      const data=(currentDataset==="ventas"?dataVentas:dataIncentivos);
+      const selMonth=document.getElementById("month");
+      if(!data[y]){selMonth.innerHTML="";return;}
+      const meses=Object.keys(data[y]).sort();
+      selMonth.innerHTML=meses.map(m=>{
+        const nombre=monthNames[parseInt(m,10)-1];
+        return `<option value="${m}">${nombre}</option>`;
+      }).join("");
+      selMonth.value=meses.includes((new Date().getMonth()+1).toString().padStart(2,"0")) ?
+                     (new Date().getMonth()+1).toString().padStart(2,"0") :
+                     meses[0];
     }
 
     function toggleDataset(ds){
       currentDataset = ds;
+      document.getElementById("btn-ventas").classList.toggle("active",ds==="ventas");
+      document.getElementById("btn-incentivos").classList.toggle("active",ds==="incentivos");
+      updateMonths();
       render();
     }
 
@@ -178,7 +208,7 @@
       const keys=Object.keys(totales);
       if(keys.length===0){cont.innerHTML="";return;}
 
-      let html=`<div class="general-card"><h2>TOTAL POR KPI ${month}/${year}</h2>`;
+      let html=`<div class="general-card"><h2>TOTAL POR KPI ${monthNames[parseInt(month)-1]} ${year}</h2>`;
       keys.forEach(k=>{
         const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
         html+=`
@@ -195,46 +225,19 @@
         const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
         if(charts[id]) charts[id].destroy();
         const ctx=document.getElementById(id);
-
         charts[id]=new Chart(ctx,{
           type:"line",
           data:{
             labels:[0,100],
             datasets:[
-              {
-                label:"Avance",
-                data:[0,p],
-                borderColor:"#4CAF50",
-                borderWidth:3,
-                fill:false,
-                tension:0
-              },
-              {
-                label:"Meta (100%)",
-                data:[0,100],
-                borderColor:"red",
-                borderDash:[6,6],
-                borderWidth:2,
-                fill:false,
-                tension:0
-              }
+              {label:"Avance",data:[0,p],borderColor:"#4CAF50",borderWidth:3,fill:false,tension:0},
+              {label:"Meta (100%)",data:[0,100],borderColor:"red",borderDash:[6,6],borderWidth:2,fill:false,tension:0}
             ]
           },
           options:{
-            responsive:true,
-            maintainAspectRatio:false,
-            plugins:{
-              legend:{labels:{color:"#fff"}},
-              tooltip:{enabled:true}
-            },
-            scales:{
-              x:{display:false},
-              y:{
-                min:0,max:160,
-                ticks:{stepSize:20,color:"#fff"},
-                grid:{color:"rgba(255,255,255,0.1)"}
-              }
-            },
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{labels:{color:"#fff"}},tooltip:{enabled:true}},
+            scales:{x:{display:false},y:{min:0,max:160,ticks:{stepSize:20,color:"#fff"},grid:{color:"rgba(255,255,255,0.1)"}}},
             elements:{point:{radius:0}}
           }
         });
@@ -246,7 +249,7 @@
       cont.innerHTML=vendedores.map(v=>{
         let kpiHtml="";
         for(const [k,vals] of Object.entries(v.kpis||{})){
-          const pct=Number(vals.porcentaje)||0;
+          const pct = vals.meta>0 ? (vals.avance/vals.meta*100) : 0;
           kpiHtml+=`<div class="kpi-item"><strong>${k.replace(/_.*$/,"")}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${pct.toFixed(1)}%</div>`;
         }
         return `
@@ -260,7 +263,7 @@
     }
 
     const fmtNumber=n=>Number(n).toLocaleString("es-PE",{maximumFractionDigits:1});
-    const kpiId=k=> "chart_"+k.replace(/\W/g,"_");
+    const kpiId=k=>"chart_"+k.replace(/\W/g,"_");
 
     init();
   </script>
