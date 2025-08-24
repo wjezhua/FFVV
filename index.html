@@ -1,98 +1,146 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Dashboard Fuerza de Ventas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: #0b1020;
+      background: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(90deg, #1e3c72, #2a5298);
+    }
+    header h1 { margin: 0; font-size: 2.5em; }
+    header p { margin: 5px 0 0; }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      padding: 15px;
+      background: #1e1e1e;
+    }
+    select, button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      cursor: pointer;
+      background: #007bff;
       color: #fff;
     }
-    header { padding: 1rem; text-align: center; }
-    select, button {
-      margin: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      border: none;
-      font-size: 1rem;
-    }
-    button.active { background: #4CAF50; color: #fff; }
-    .container { max-width: 1200px; margin: auto; padding: 1rem; }
     .general-card {
-      background: rgba(255,255,255,0.08);
+      background: #2a2a2a;
+      margin: 20px;
+      padding: 20px;
       border-radius: 12px;
-      padding: 1rem;
-      margin: 1rem 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-    .general-card h2 { margin: 0 0 .5rem; }
+    .general-card h2 {
+      margin-top: 0;
+      color: #fff;
+    }
     .kpi {
-      background: rgba(255,255,255,0.05);
-      margin: 0.5rem 0;
-      padding: 0.5rem;
-      border-radius: 8px;
+      margin-bottom: 25px;
     }
-    .kpi canvas {
-      width: 100%;
-      height: 100px !important;
-      margin-top: 6px;
+    canvas {
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 10px;
     }
-    .cards {
+    .cards-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
+      gap: 20px;
+      padding: 20px;
     }
     .card {
-      background: rgba(255,255,255,0.08);
+      background: #2a2a2a;
       border-radius: 12px;
-      padding: 1rem;
+      padding: 15px;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .card img {
-      width: 100px; height: 100px; border-radius: 50%;
-      object-fit: cover; margin-bottom: 0.5rem;
+      width: 100%;
+      max-width: 200px;
+      border-radius: 50%;
+    }
+    .card h3 {
+      margin: 10px 0 5px;
+    }
+    .card .kpi-item {
+      font-size: 0.9em;
+      margin: 4px 0;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Dashboard Fuerza de Ventas</h1>
-    <div>
-      <label for="year">Año:</label>
-      <select id="year"></select>
-      <label for="month">Mes:</label>
-      <select id="month"></select>
-    </div>
-    <div>
-      <button id="btnComisional" class="active">Comisional</button>
-      <button id="btnIncentivos">Incentivos</button>
-    </div>
+    <p>Seguimiento de KPIs — Comisional & Incentivos</p>
   </header>
 
-  <div class="container">
-    <div id="general-summary"></div>
-    <div id="cards" class="cards"></div>
+  <div class="filters">
+    <label for="year">Año:</label>
+    <select id="year"></select>
+    <label for="month">Mes:</label>
+    <select id="month"></select>
+    <button onclick="toggleDataset('ventas')">Comisional</button>
+    <button onclick="toggleDataset('incentivos')">Incentivos</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div id="general-summary"></div>
+  <div class="cards-container" id="cards-container"></div>
+
   <script>
-    const ventasURL = "data/ventas.json";
-    const incentivosURL = "data/incentivos.json";
-    let currentData = "ventas";
+    let dataVentas = {}, dataIncentivos = {};
+    let currentDataset = "ventas";
     const charts = {};
 
-    const fmtNumber = n => (Number(n)||0).toLocaleString('es-PE',{maximumFractionDigits:1});
-    const formatPercent = (a,m) => {
-      let pct = (m>0 ? (a/m*100) : 0);
-      return pct.toFixed(1) + "%";
-    };
-    const kpiId = k => "sumchart-"+k.replace(/[^a-zA-Z0-9]/g,"_");
+    // Inicializar
+    async function init(){
+      dataVentas = await fetch("data/ventas.json").then(r=>r.json());
+      dataIncentivos = await fetch("data/incentivos.json").then(r=>r.json());
 
-    function renderGeneralByKPI(vendedores, year, month){
+      const years = Object.keys(dataVentas);
+      const selYear = document.getElementById("year");
+      selYear.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
+      selYear.value = new Date().getFullYear();
+
+      const selMonth = document.getElementById("month");
+      selMonth.innerHTML = Array.from({length:12},(_,i)=>{
+        const m = (i+1).toString().padStart(2,"0");
+        return `<option value="${m}">${m}</option>`;
+      }).join("");
+      selMonth.value = (new Date().getMonth()+1).toString().padStart(2,"0");
+
+      render();
+      selYear.addEventListener("change",render);
+      selMonth.addEventListener("change",render);
+    }
+
+    function toggleDataset(ds){
+      currentDataset = ds;
+      render();
+    }
+
+    function render(){
+      const y=document.getElementById("year").value;
+      const m=document.getElementById("month").value;
+      const data=(currentDataset==="ventas"?dataVentas:dataIncentivos);
+      const vendedores=data?.[y]?.[m]||[];
+      renderGeneralByKPI(vendedores,y,m);
+      renderCards(vendedores,y,m);
+    }
+
+    function renderGeneralByKPI(vendedores,year,month){
       const totales={};
       vendedores.forEach(v=>{
         Object.entries(v.kpis||{}).forEach(([k,vals])=>{
@@ -101,7 +149,6 @@
           totales[k].meta += Number(vals.meta)||0;
         });
       });
-
       const cont=document.getElementById("general-summary");
       const keys=Object.keys(totales);
       if(keys.length===0){cont.innerHTML="";return;}
@@ -112,13 +159,12 @@
         html+=`
           <div class="kpi">
             <strong>${k}</strong>: ${fmtNumber(a)} de ${fmtNumber(m)} — ${p.toFixed(1)}%
-            <canvas id="${kpiId(k)}" height="100"></canvas>
+            <canvas id="${kpiId(k)}" height="120"></canvas>
           </div>`;
       });
       html+=`</div>`;
       cont.innerHTML=html;
 
-      // Dibujar gráficos
       keys.forEach(k=>{
         const id=kpiId(k);
         const a=totales[k].avance,m=totales[k].meta,p=m>0?(a/m*100):0;
@@ -132,15 +178,16 @@
             datasets:[
               {
                 label:"Avance",
-                data:[0,p],
+                data:Array(9).fill(p),
                 borderColor:"#4CAF50",
+                backgroundColor:"rgba(76,175,80,0.2)",
                 borderWidth:3,
-                fill:false,
+                fill:true,
                 tension:0
               },
               {
                 label:"Meta (100%)",
-                data:[100,100],
+                data:Array(9).fill(100),
                 borderColor:"red",
                 borderDash:[6,6],
                 borderWidth:2,
@@ -152,15 +199,21 @@
           options:{
             responsive:true,
             maintainAspectRatio:false,
-            plugins:{legend:{labels:{color:"#fff"}},tooltip:{enabled:true}},
+            plugins:{
+              legend:{labels:{color:"#fff"}},
+              tooltip:{enabled:true}
+            },
             scales:{
               x:{
-                min:0,
-                max:160,
+                min:0,max:160,
                 ticks:{stepSize:20,color:"#fff"},
                 grid:{color:"rgba(255,255,255,0.1)"}
               },
-              y:{display:false}
+              y:{
+                min:0,max:160,
+                ticks:{stepSize:20,color:"#fff"},
+                grid:{color:"rgba(255,255,255,0.1)"}
+              }
             },
             elements:{point:{radius:0}}
           }
@@ -169,39 +222,26 @@
     }
 
     function renderCards(vendedores,year,month){
-      renderGeneralByKPI(vendedores,year,month);
-      const div=document.getElementById("cards");div.innerHTML="";
-      vendedores.forEach(v=>{
-        const c=document.createElement("div");c.className="card";
-        const vigente=v.vigente?"<em>Mes en curso</em>":"";
-        c.innerHTML=`<img src="images/${v.foto}" alt="${v.nombre}"><h3>${v.nombre}</h3><p>${vigente}</p><div class="kpis"></div>`;
-        const kp=c.querySelector(".kpis");
-        Object.entries(v.kpis||{}).forEach(([k,vals])=>{
-          kp.innerHTML+=`<div class="kpi"><strong>${k}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${formatPercent(vals.avance,vals.meta)}</div>`;
-        });
-        div.appendChild(c);
-      });
+      const cont=document.getElementById("cards-container");
+      cont.innerHTML=vendedores.map(v=>{
+        let kpiHtml="";
+        for(const [k,vals] of Object.entries(v.kpis||{})){
+          const pct=Number(vals.porcentaje)||0;
+          kpiHtml+=`<div class="kpi-item"><strong>${k.replace(/_.*$/,"")}</strong>: ${fmtNumber(vals.avance)} de ${fmtNumber(vals.meta)} — ${pct.toFixed(1)}%</div>`;
+        }
+        return `
+          <div class="card">
+            <img src="images/${v.foto}" alt="${v.nombre}">
+            <h3>${v.nombre}</h3>
+            <p>${v.zona} ${v.vigente?"<span style='color:lime'>(Mes en curso)</span>":""}</p>
+            ${kpiHtml}
+          </div>`;
+      }).join("");
     }
 
-    async function loadData(){
-      const y=document.getElementById("year").value;
-      const m=document.getElementById("month").value;
-      const url=currentData==="ventas"?ventasURL:incentivosURL;
-      const data=await (await fetch(url)).json();
-      const vendedores=data?.[y]?.[m]||[];
-      renderCards(vendedores,y,m);
-    }
+    const fmtNumber=n=>Number(n).toLocaleString("es-PE",{maximumFractionDigits:1});
+    const kpiId=k=> "chart_"+k.replace(/\W/g,"_");
 
-    function init(){
-      const now=new Date();
-      const yS=document.getElementById("year"),mS=document.getElementById("month");
-      for(let y=now.getFullYear()-1;y<=now.getFullYear()+1;y++){let o=document.createElement("option");o.value=y;o.text=y;if(y===now.getFullYear())o.selected=true;yS.appendChild(o);}
-      for(let m=1;m<=12;m++){let o=document.createElement("option");o.value=String(m).padStart(2,"0");o.text=o.value;if(m===now.getMonth()+1)o.selected=true;mS.appendChild(o);}
-      yS.addEventListener("change",loadData);mS.addEventListener("change",loadData);
-      document.getElementById("btnComisional").onclick=()=>{currentData="ventas";btnComisional.classList.add("active");btnIncentivos.classList.remove("active");loadData();}
-      document.getElementById("btnIncentivos").onclick=()=>{currentData="incentivos";btnIncentivos.classList.add("active");btnComisional.classList.remove("active");loadData();}
-      loadData();
-    }
     init();
   </script>
 </body>
