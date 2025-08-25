@@ -16,7 +16,6 @@
       color: #fff;
     }
 
-    /* 🔹 Header moderno */
     header {
       background: rgba(20, 30, 40, 0.85);
       backdrop-filter: blur(10px);
@@ -72,30 +71,6 @@
       font-weight: bold;
     }
 
-    /* 📱 Responsive móvil */
-    @media (max-width: 600px) {
-      header {
-        padding: 10px 15px;
-        gap: 8px;
-      }
-      header h1 {
-        font-size: 1.3em;
-      }
-      header .subtitle {
-        font-size: 0.8em;
-      }
-      .toolbar {
-        flex-direction: column;
-        gap: 8px;
-      }
-      select, button {
-        width: 100%;
-        font-size: 1em;
-        padding: 10px;
-      }
-    }
-
-    /* 🔹 Contenido */
     .container {
       padding: 20px;
     }
@@ -107,21 +82,6 @@
       margin-bottom: 20px;
     }
 
-    .totales h2 {
-      margin-top: 0;
-      font-size: 1.4em;
-    }
-
-    .kpi-total {
-      margin-bottom: 25px;
-    }
-
-    canvas {
-      margin-top: 10px;
-      max-height: 150px;
-    }
-
-    /* 🔹 Cards de vendedores */
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -148,37 +108,15 @@
       border: 3px solid #007bff;
     }
 
-    .card h3 {
-      margin: 8px 0;
-      font-size: 1.1em;
-    }
-
-    .kpis {
-      text-align: left;
-      font-size: 0.9em;
-      width: 100%;
-    }
-
-    .kpis p {
-      margin: 6px 0;
-      padding: 6px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 6px;
-    }
-
-    .kpi-ok {
-      color: #4caf50; /* verde */
-      font-weight: bold;
-    }
-    .kpi-bad {
-      color: #ff4c4c; /* rojo */
-      font-weight: bold;
-    }
+    .card h3 { margin: 8px 0; font-size: 1.1em; }
+    .kpis { text-align: left; font-size: 0.9em; width: 100%; }
+    .kpis p { margin: 6px 0; padding: 6px; background: rgba(255,255,255,0.04); border-radius: 6px; }
+    .kpi-ok { color: #4caf50; font-weight: bold; }
+    .kpi-bad { color: #ff4c4c; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- 🔹 Header -->
   <header>
     <div class="top-row">
       <div>
@@ -198,17 +136,14 @@
     </div>
   </header>
 
-  <!-- 🔹 Contenido -->
   <div class="container">
     <div class="totales" id="totales"></div>
     <div class="cards" id="cards"></div>
   </div>
 
   <script>
-    const meses = [
-      "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
-    ];
+    const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
     let dataset = "ventas";
     let dataCache = {};
 
@@ -220,16 +155,13 @@
     async function init() {
       dataCache["ventas"] = await cargarDatos("ventas");
       dataCache["incentivos"] = await cargarDatos("incentivos");
-
       const yearSel = document.getElementById("year");
       const years = Object.keys(dataCache["ventas"]);
       years.forEach(y => {
         const opt = document.createElement("option");
-        opt.value = y;
-        opt.textContent = y;
+        opt.value = y; opt.textContent = y;
         yearSel.appendChild(opt);
       });
-
       yearSel.value = years[years.length-1];
       actualizarMeses();
       mostrarDatos();
@@ -239,15 +171,13 @@
       const yearSel = document.getElementById("year").value;
       const monthSel = document.getElementById("month");
       monthSel.innerHTML = "";
-
-      const months = Object.keys(dataCache[dataset][yearSel]).filter(m => dataCache[dataset][yearSel][m].length > 0);
+      const months = Object.keys(dataCache[dataset][yearSel])
+        .filter(m => dataCache[dataset][yearSel][m].length > 0);
       months.forEach(m => {
         const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = meses[parseInt(m)-1];
+        opt.value = m; opt.textContent = meses[parseInt(m)-1];
         monthSel.appendChild(opt);
       });
-
       if (!months.includes(monthSel.value)) {
         monthSel.value = months[months.length-1];
       }
@@ -256,15 +186,11 @@
     function toggleDataset(tipo) {
       const selectedYear = document.getElementById("year").value;
       const selectedMonth = document.getElementById("month").value;
-
       dataset = tipo;
       document.getElementById("btn-ventas").classList.remove("active");
       document.getElementById("btn-incentivos").classList.remove("active");
       document.getElementById(`btn-${tipo}`).classList.add("active");
-
       actualizarMeses();
-
-      // Restaurar selección si existe
       if (Object.keys(dataCache[dataset][selectedYear] || {}).includes(selectedMonth)) {
         document.getElementById("year").value = selectedYear;
         document.getElementById("month").value = selectedMonth;
@@ -276,12 +202,9 @@
       const year = document.getElementById("year").value;
       const month = document.getElementById("month").value;
       const datos = dataCache[dataset][year][month];
-
-      // 👉 Totales
       const totalesDiv = document.getElementById("totales");
       totalesDiv.innerHTML = `<h2>TOTAL POR KPI ${meses[parseInt(month)-1]}/${year}</h2>`;
       const acumulados = {};
-
       datos.forEach(v => {
         for (const k in v.kpis) {
           if (!acumulados[k]) acumulados[k] = {avance:0, meta:0};
@@ -289,40 +212,25 @@
           acumulados[k].meta += v.kpis[k].meta;
         }
       });
-
       Object.keys(acumulados).forEach(kpi => {
         const {avance, meta} = acumulados[kpi];
         const porc = meta > 0 ? (avance/meta*100).toFixed(1) : 0;
         const div = document.createElement("div");
         div.className = "kpi-total";
-        div.innerHTML = `
-          <strong>${kpi.replace("_Avance","")}:</strong> 
+        div.innerHTML = `<strong>${kpi.replace("_Avance","")}:</strong> 
           ${avance.toLocaleString()} de ${meta.toLocaleString()} — ${porc}%
-          <canvas id="chart-${kpi}"></canvas>
-        `;
+          <canvas id="chart-${kpi}"></canvas>`;
         totalesDiv.appendChild(div);
-
         const ctx = document.getElementById(`chart-${kpi}`).getContext("2d");
         new Chart(ctx, {
           type: "line",
           data: {
             labels: Array.from({length: 9}, (_, i) => i*20),
             datasets: [
-              {
-                label: "Avance",
-                data: Array(9).fill(porc),
-                borderColor: "limegreen",
-                borderWidth: 2,
-                fill: false,
-              },
-              {
-                label: "Meta (100%)",
-                data: Array(9).fill(100),
-                borderColor: "red",
-                borderWidth: 2,
-                borderDash: [6,4],
-                fill: false,
-              }
+              { label: "Avance", data: Array(9).fill(porc),
+                borderColor: "limegreen", borderWidth: 2, fill: false },
+              { label: "Meta (100%)", data: Array(9).fill(100),
+                borderColor: "red", borderWidth: 2, borderDash: [6,4], fill: false }
             ]
           },
           options: {
@@ -335,8 +243,6 @@
           }
         });
       });
-
-      // 👉 Cards
       const cardsDiv = document.getElementById("cards");
       cardsDiv.innerHTML = "";
       datos.forEach(v => {
@@ -346,8 +252,7 @@
           <img src="images/${v.foto}" alt="${v.nombre}">
           <h3>${v.nombre}</h3>
           <p><em>${v.zona}</em></p>
-          <div class="kpis"></div>
-        `;
+          <div class="kpis"></div>`;
         const kpisDiv = card.querySelector(".kpis");
         for (const k in v.kpis) {
           const {avance, meta} = v.kpis[k];
@@ -365,74 +270,52 @@
     init();
 
     /* ===============================
-       📄 Exportar PDF (mejorado)
-       - Panel general en 1ª página
-       - 2 tarjetas por página A4
-       - Escala alta para textos nítidos
-       - Fondo oscuro conservado
+       📄 Exportar PDF (horizontal)
+       - Orientación landscape
+       - Panel en página 1
+       - 2 tarjetas por página
+       - Título con mes, año y dataset
        =============================== */
     async function exportarPDF() {
       const { jsPDF } = window.jspdf;
-
       const year = document.getElementById("year").value;
       const month = document.getElementById("month").value;
-      const titulo = `Dashboard Fuerza de Ventas — ${meses[parseInt(month)-1]} ${year}`;
+      const datasetName = dataset === "ventas" ? "Comisional" : "Incentivos";
+      const titulo = `Dashboard Fuerza de Ventas — ${meses[parseInt(month)-1]} ${year} — ${datasetName}`;
 
-      const pdf = new jsPDF("l", "mm", "a4")
+      const pdf = new jsPDF("l", "mm", "a4"); // landscape
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 10;
 
-      // 👉 1) Panel general (primera página)
+      // 👉 Panel principal
       const panel = document.getElementById("totales");
       const canvasPanel = await html2canvas(panel, {
-        scale: 3,                 // alta definición
-        useCORS: true,
-        backgroundColor: "#111",
-        windowWidth: panel.scrollWidth,
-        windowHeight: panel.scrollHeight
+        scale: 3, useCORS: true, backgroundColor: "#111"
       });
-
       const imgPanel = canvasPanel.toDataURL("image/png");
-      // altura proporcional limitada a la página
-      const maxPanelHeight = pdfHeight - 30; // deja espacio para título
-      const panelHeight = Math.min(
-        maxPanelHeight,
-        (canvasPanel.height * pdfWidth) / canvasPanel.width
-      );
-
+      const panelHeight = (canvasPanel.height * pdfWidth) / canvasPanel.width;
       pdf.setFontSize(14);
       pdf.text(titulo, margin, 15);
-      pdf.addImage(imgPanel, "PNG", 0, 25, pdfWidth, panelHeight);
+      pdf.addImage(imgPanel, "PNG", margin, 25, pdfWidth - margin*2, panelHeight);
 
-      // 👉 2) Tarjetas de vendedores (2 por página)
+      // 👉 Tarjetas (2 por página horizontal)
       const cards = document.querySelectorAll(".card");
-      const halfPageHeight = (pdfHeight - margin * 3) / 2; // espacio útil por tarjeta
+      const halfPageWidth = (pdfWidth - margin*3) / 2;
 
       for (let i = 0; i < cards.length; i++) {
-        // cada dos tarjetas: nueva hoja
         if (i % 2 === 0) pdf.addPage();
-
         const card = cards[i];
         const canvasCard = await html2canvas(card, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: "#111",
-          windowWidth: card.scrollWidth,
-          windowHeight: card.scrollHeight
+          scale: 3, useCORS: true, backgroundColor: "#111"
         });
-
         const imgCard = canvasCard.toDataURL("image/png");
-        // tamaño destino ajustado a ancho con tope de alto (para no cortar texto)
-        const targetWidth = pdfWidth - margin * 2;
-        let targetHeight = (canvasCard.height * targetWidth) / canvasCard.width;
-        if (targetHeight > halfPageHeight) targetHeight = halfPageHeight;
-
-        const yPos = (i % 2 === 0) ? margin : margin + halfPageHeight + margin;
-        pdf.addImage(imgCard, "PNG", margin, yPos, targetWidth, targetHeight);
+        const targetHeight = (canvasCard.height * halfPageWidth) / canvasCard.width;
+        const xPos = (i % 2 === 0) ? margin : margin + halfPageWidth + margin;
+        pdf.addImage(imgCard, "PNG", xPos, 20, halfPageWidth, targetHeight);
       }
 
-      pdf.save(`dashboard_${year}_${month}.pdf`);
+      pdf.save(`dashboard_${year}_${month}_${datasetName}.pdf`);
     }
   </script>
 </body>
