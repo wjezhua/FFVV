@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reportes — Aún en desarrollo</title>
+  <style>
+    /* ⚫️ Estilos base heredados del dashboard */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #111;
+      color: #fff;
+    }
+    header {
+      background: rgba(20, 30, 40, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    }
+    header .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.6em;
+      font-weight: 700;
+      color: #fff;
+    }
+    header .subtitle {
+      font-size: 0.9em;
+      opacity: 0.8;
+      color: #ccc;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+    }
+    button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95em;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #007bff;
+      color: #fff;
+    }
+
+    /* 📱 Responsive */
+    @media (max-width: 600px) {
+      header { padding: 10px 15px; gap: 8px; }
+      header h1 { font-size: 1.3em; }
+      header .subtitle { font-size: 0.8em; }
+      .toolbar { flex-direction: column; gap: 8px; }
+      button { width: 100%; font-size: 1em; padding: 10px; }
+    }
+
+    /* 🎯 Contenido central */
+    .container {
+      min-height: calc(100vh - 100px);
+      display: grid;
+      place-items: center;
+      padding: 30px 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      max-width: 680px;
+      width: 100%;
+    }
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.6em;
+    }
+    .card p {
+      margin: 0 0 22px 0;
+      color: #ccc;
+      line-height: 1.6;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(0,123,255,0.15);
+      color: #9ecbff;
+      font-weight: 600;
+      margin-bottom: 14px;
+      font-size: 0.9em;
+      letter-spacing: .2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔹 Header -->
+  <header>
+    <div class="top-row">
+      <div>
+        <h1>Gestión diaria</h1>
+        <div class="subtitle">Sección en desarrollo</div>
+      </div>
+      <div class="toolbar">
+        <button onclick="window.location.href='index.html'">← Volver al Dashboard</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 🔹 Contenido -->
+  <main class="container">
+    <section class="card">
+      <span class="pill">Aún en desarrollo</span>
+      <h2>Próximamente</h2>
+      <p>
+        Estamos preparando nuevos reportes y visualizaciones para esta sección.
+        Vuelve pronto para ver las novedades.
+      </p>
+      <button onclick="window.location.href='index.html'">← Volver al Dashboard</button>
+    </section>
+  </main>
+
+</body>
+</html>
 
