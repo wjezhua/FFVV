@@ -360,6 +360,7 @@
 
     // 🔹 Exportar a PDF (versión mejorada landscape)
    // 🔹 Exportar a PDF (versión mejorada landscape con fondo)
+// 🔹 Exportar a PDF (sin gráficos, fondo negro fijo en PC)
 async function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const year = document.getElementById("year").value;
@@ -372,18 +373,27 @@ async function exportarPDF() {
   const pdfHeight = pdf.internal.pageSize.getHeight();
   const margin = 10;
 
-  // 👉 Panel principal (primera hoja con fondo)
-  const panel = document.getElementById("totales");
-  const canvasPanel = await html2canvas(panel, { 
+  // 👉 Panel principal SIN gráficos
+  const panelClone = document.getElementById("totales").cloneNode(true);
+  panelClone.querySelectorAll("canvas").forEach(c => c.remove()); // quitar charts
+  document.body.appendChild(panelClone); // temporal para render
+
+  const canvasPanel = await html2canvas(panelClone, { 
     scale: 2, 
     useCORS: true, 
-    backgroundColor: null   // 👈 mantiene el fondo real (oscuro)
+    backgroundColor: null 
   });
-  const imgPanel = canvasPanel.toDataURL("image/png");
+  document.body.removeChild(panelClone);
 
+  const imgPanel = canvasPanel.toDataURL("image/png");
   const panelW = pdfWidth - margin * 2;
   const panelH = (canvasPanel.height * panelW) / canvasPanel.width;
 
+  // Fondo negro fijo primera página
+  pdf.setFillColor(0,0,0);
+  pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
+  pdf.setTextColor(255,255,255);
   pdf.setFontSize(14);
   pdf.text(titulo, margin, 15);
   pdf.addImage(imgPanel, "PNG", margin, 25, panelW, panelH);
@@ -393,21 +403,42 @@ async function exportarPDF() {
   const halfPageWidth = (pdfWidth - margin * 3) / 2;
 
   for (let i = 0; i < cards.length; i++) {
-    if (i % 2 === 0) pdf.addPage();
+    pdf.addPage();
+    pdf.setFillColor(0,0,0); // fondo negro en cada hoja
+    pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
     const card = cards[i];
     const canvasCard = await html2canvas(card, { 
       scale: 2, 
       useCORS: true, 
-      backgroundColor: null   // 👈 mantiene el fondo real
+      backgroundColor: null 
     });
     const imgCard = canvasCard.toDataURL("image/png");
     const targetHeight = (canvasCard.height * halfPageWidth) / canvasCard.width;
     const xPos = (i % 2 === 0) ? margin : margin + halfPageWidth + margin;
-    pdf.addImage(imgCard, "PNG", xPos, 20, halfPageWidth, targetHeight);
+    const yPos = 20;
+
+    pdf.addImage(imgCard, "PNG", xPos, yPos, halfPageWidth, targetHeight);
+
+    // Si es par, mantenemos espacio para la segunda tarjeta
+    if (i % 2 === 0 && i + 1 < cards.length) {
+      const card2 = cards[i + 1];
+      const canvasCard2 = await html2canvas(card2, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: null 
+      });
+      const imgCard2 = canvasCard2.toDataURL("image/png");
+      const targetHeight2 = (canvasCard2.height * halfPageWidth) / canvasCard2.width;
+      const xPos2 = margin + halfPageWidth + margin;
+      pdf.addImage(imgCard2, "PNG", xPos2, yPos, halfPageWidth, targetHeight2);
+      i++; // saltar el siguiente porque ya se imprimió
+    }
   }
 
   pdf.save(`dashboard_${year}_${month}_${datasetName}.pdf`);
 }
+
 
     document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
     document.getElementById("month").addEventListener("change", mostrarDatos);
