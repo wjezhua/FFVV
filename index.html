@@ -359,46 +359,55 @@
     }
 
     // 🔹 Exportar a PDF (versión mejorada landscape)
-    async function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const year = document.getElementById("year").value;
-      const month = document.getElementById("month").value;
-      const datasetName = dataset === "ventas" ? "Comisional" : "Incentivos";
-      const titulo = `Dashboard Fuerza de Ventas — ${meses[parseInt(month)-1]} ${year} — ${datasetName}`;
+   // 🔹 Exportar a PDF (versión mejorada landscape con fondo)
+async function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const year = document.getElementById("year").value;
+  const month = document.getElementById("month").value;
+  const datasetName = dataset === "ventas" ? "Comisional" : "Incentivos";
+  const titulo = `Dashboard Fuerza de Ventas — ${meses[parseInt(month)-1]} ${year} — ${datasetName}`;
 
-      const pdf = new jsPDF("l", "mm", "a4"); // landscape
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
+  const pdf = new jsPDF("l", "mm", "a4"); // landscape
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const margin = 10;
 
-      // 👉 Panel principal (primera hoja)
-      const panel = document.getElementById("totales");
-      const canvasPanel = await html2canvas(panel, { scale: 2, useCORS: true });
-      const imgPanel = canvasPanel.toDataURL("image/png");
+  // 👉 Panel principal (primera hoja con fondo)
+  const panel = document.getElementById("totales");
+  const canvasPanel = await html2canvas(panel, { 
+    scale: 2, 
+    useCORS: true, 
+    backgroundColor: null   // 👈 mantiene el fondo real (oscuro)
+  });
+  const imgPanel = canvasPanel.toDataURL("image/png");
 
-      const panelW = pdfWidth - margin * 2;
-      const panelH = (canvasPanel.height * panelW) / canvasPanel.width;
+  const panelW = pdfWidth - margin * 2;
+  const panelH = (canvasPanel.height * panelW) / canvasPanel.width;
 
-      pdf.setFontSize(14);
-      pdf.text(titulo, margin, 15);
-      pdf.addImage(imgPanel, "PNG", margin, 25, panelW, panelH);
+  pdf.setFontSize(14);
+  pdf.text(titulo, margin, 15);
+  pdf.addImage(imgPanel, "PNG", margin, 25, panelW, panelH);
 
-      // 👉 Tarjetas (2 por página horizontal)
-      const cards = document.querySelectorAll(".card");
-      const halfPageWidth = (pdfWidth - margin * 3) / 2;
+  // 👉 Tarjetas (2 por página horizontal con fondo real)
+  const cards = document.querySelectorAll(".card");
+  const halfPageWidth = (pdfWidth - margin * 3) / 2;
 
-      for (let i = 0; i < cards.length; i++) {
-        if (i % 2 === 0) pdf.addPage();
-        const card = cards[i];
-        const canvasCard = await html2canvas(card, { scale: 2, useCORS: true });
-        const imgCard = canvasCard.toDataURL("image/png");
-        const targetHeight = (canvasCard.height * halfPageWidth) / canvasCard.width;
-        const xPos = (i % 2 === 0) ? margin : margin + halfPageWidth + margin;
-        pdf.addImage(imgCard, "PNG", xPos, 20, halfPageWidth, targetHeight);
-      }
+  for (let i = 0; i < cards.length; i++) {
+    if (i % 2 === 0) pdf.addPage();
+    const card = cards[i];
+    const canvasCard = await html2canvas(card, { 
+      scale: 2, 
+      useCORS: true, 
+      backgroundColor: null   // 👈 mantiene el fondo real
+    });
+    const imgCard = canvasCard.toDataURL("image/png");
+    const targetHeight = (canvasCard.height * halfPageWidth) / canvasCard.width;
+    const xPos = (i % 2 === 0) ? margin : margin + halfPageWidth + margin;
+    pdf.addImage(imgCard, "PNG", xPos, 20, halfPageWidth, targetHeight);
+  }
 
-      pdf.save(`dashboard_${year}_${month}_${datasetName}.pdf`);
-    }
+  pdf.save(`dashboard_${year}_${month}_${datasetName}.pdf`);
+}
 
     document.getElementById("year").addEventListener("change", ()=>{ actualizarMeses(); mostrarDatos(); });
     document.getElementById("month").addEventListener("change", mostrarDatos);
