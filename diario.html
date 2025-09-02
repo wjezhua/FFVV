@@ -174,10 +174,10 @@
       const s = (raw||'').toString().trim().toUpperCase();
       if (s.indexOf('CUMPL') !== -1) return {label: 'CUMPLIÓ', cls: 'st-ok'};
       if (s.indexOf('VIG') !== -1) return {label: 'VIGENTE', cls: 'st-vig'};
-      if (s.indexOf('NO') !== -1 && s.indexOf('NO') < 4) return {label:'NO CUMPLE', cls:'st-no'};
+      if (s.indexOf('NO') !== -1 && s.indexOf('NO') < 4) return {label:'NO CUMPLIÓ', cls:'st-no'};
       // fallback
       if (s==='CUMPLIO' || s==='CUMPLIO' ) return {label:'CUMPLIÓ', cls:'st-ok'};
-      return {label: s || 'VIGENTE', cls: s ? (s==='VIGENTE' ? 'st-vig' : (s==='NO CUMPLE' ? 'st-no' : 'st-vig')) : 'st-vig'};
+      return {label: s || 'VIGENTE', cls: s ? (s==='VIGENTE' ? 'st-vig' : (s==='NO CUMPLIÓ' ? 'st-no' : 'st-vig')) : 'st-vig'};
     }
 
     // formatea yyyy-mm-dd
