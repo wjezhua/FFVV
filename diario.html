@@ -1,143 +1,390 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reportes — Aún en desarrollo</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reportes — Reuniones</title>
+
+  <!-- ===========================
+       Estilos (heredan look del dashboard)
+       =========================== -->
   <style>
-    /* ⚫️ Estilos base heredados del dashboard */
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #111;
-      color: #fff;
+    :root{
+      --bg:#0f1113;
+      --panel: rgba(255,255,255,0.04);
+      --muted:#9aa0a6;
+      --accent:#1f6feb;
+      --green:#4caf50;
+      --red:#ff4c4c;
+      --card-radius:14px;
+      --gap:14px;
     }
-    header {
-      background: rgba(20, 30, 40, 0.85);
-      backdrop-filter: blur(10px);
-      padding: 12px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+    header{
+      background: linear-gradient(90deg, rgba(10,28,32,0.95), rgba(25,45,48,0.95));
+      padding:16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      position:sticky; top:0; z-index:1000;
+      display:flex; align-items:center; justify-content:space-between; gap:20px;
     }
-    header .top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+    header .left {display:flex; gap:12px; align-items:center;}
+    header h1{margin:0;font-size:1.25rem;letter-spacing:0.2px}
+    header .subtitle{color:var(--muted);font-size:0.9rem}
+    .toolbar{display:flex; gap:8px; align-items:center}
+    .btn {
+      background: rgba(255,255,255,0.06); color:#fff; border:0; padding:8px 12px; border-radius:10px;
+      cursor:pointer; font-weight:600;
     }
-    header h1 {
-      margin: 0;
-      font-size: 1.6em;
-      font-weight: 700;
-      color: #fff;
-    }
-    header .subtitle {
-      font-size: 0.9em;
-      opacity: 0.8;
-      color: #ccc;
-    }
+    .btn:hover{background:rgba(255,255,255,0.10)}
+    .container{padding:22px; max-width:1200px; margin:0 auto;}
 
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: flex-start;
-    }
-    button {
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: none;
-      font-size: 0.95em;
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    button:hover {
-      background: #007bff;
-      color: #fff;
-    }
+/* layout */
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap:24px; align-items:start;}
+    @media (max-width:900px){ .layout{grid-template-columns:1fr; padding-bottom:30px;} header h1{font-size:1.1rem} }
 
-    /* 📱 Responsive */
-    @media (max-width: 600px) {
-      header { padding: 10px 15px; gap: 8px; }
-      header h1 { font-size: 1.3em; }
-      header .subtitle { font-size: 0.8em; }
-      .toolbar { flex-direction: column; gap: 8px; }
-      button { width: 100%; font-size: 1em; padding: 10px; }
-    }
+/* calendar card */
+    .card { background:var(--panel); border-radius:var(--card-radius); padding:18px; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
+    .calendar-header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+    .month-title{font-weight:700; font-size:1.05rem}
+    .nav {display:flex; gap:8px; align-items:center}
+    .nav .small{background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px; color:var(--muted); cursor:pointer}
+    .legend {display:flex; gap:10px; align-items:center; margin-top:8px; color:var(--muted); font-size:0.85rem}
+    .legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 
-    /* 🎯 Contenido central */
-    .container {
-      min-height: calc(100vh - 100px);
-      display: grid;
-      place-items: center;
-      padding: 30px 20px;
+/* calendar grid */
+    .weekdays{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; color:var(--muted); font-size:0.82rem; margin-bottom:6px}
+    .days{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+    .day {
+      min-height:64px;
+      border-radius:10px;
+      padding:8px;
+      background:transparent;
+      display:flex; flex-direction:column; justify-content:flex-start; gap:6px;
+      cursor:pointer; transition:all .15s;
+      border:1px solid transparent;
     }
-    .card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 28px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      max-width: 680px;
-      width: 100%;
-    }
-    .card h2 {
-      margin: 0 0 10px 0;
-      font-size: 1.6em;
-    }
-    .card p {
-      margin: 0 0 22px 0;
-      color: #ccc;
-      line-height: 1.6;
-    }
-    .pill {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(0,123,255,0.15);
-      color: #9ecbff;
-      font-weight: 600;
-      margin-bottom: 14px;
-      font-size: 0.9em;
-      letter-spacing: .2px;
-    }
+    .day:hover { transform: translateY(-3px); box-shadow:0 6px 18px rgba(0,0,0,0.45) }
+    .day .num{font-weight:700}
+    .day.empty{opacity:0.35; cursor:default;}
+    .day.has-event{ background: linear-gradient(180deg, rgba(76,175,80,0.12), transparent); border:1px solid rgba(76,175,80,0.15) }
+    .day .badge{display:inline-block; margin-top:auto; padding:4px 6px; border-radius:8px; font-size:0.78rem; color:var(--green); font-weight:700}
+
+/* details panel */
+    .details { margin-top:12px; display:flex; flex-direction:column; gap:12px; }
+    .meeting { background: rgba(255,255,255,0.03); border-radius:12px; padding:14px; }
+    .meeting .meta { color:var(--muted); font-size:0.95rem; margin-bottom:8px; display:flex; gap:12px; flex-wrap:wrap; align-items:center }
+    .meeting h3 { margin:0; font-size:1.05rem; letter-spacing:.2px }
+
+/* vendors */
+    .vendors { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:8px; }
+    .vendor { background: rgba(255,255,255,0.02); border-radius:12px; padding:12px; display:flex; gap:12px; align-items:flex-start; }
+    .vendor .avatar { width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid rgba(30,110,235,0.9) }
+    .vendor .info { flex:1 }
+    .vendor .info h4 { margin:0 0 6px 0; font-size:0.95rem }
+    .foco { display:flex; gap:8px; align-items:center; margin:4px 0; font-size:0.9rem; color:#e6eef7 }
+    .status { font-weight:700; padding:4px 8px; border-radius:999px; font-size:0.78rem; margin-left:8px; text-transform:uppercase; letter-spacing:0.6px }
+    .st-vig { background: rgba(255,255,255,0.03); color:var(--muted) }
+    .st-ok { background: rgba(76,175,80,0.12); color:var(--green) }
+    .st-no { background: rgba(255,76,76,0.07); color:var(--red) }
+
+/* empty state */
+    .empty { text-align:center; color:var(--muted); padding:28px 12px; border-radius:10px; background:rgba(255,255,255,0.02) }
+
+/* small helpers */
+    .muted { color:var(--muted) }
+    .sep { height:10px }
   </style>
 </head>
 <body>
-
-  <!-- 🔹 Header -->
   <header>
-    <div class="top-row">
+    <div class="left">
       <div>
-        <h1>Gestión diaria</h1>
-        <div class="subtitle">Sección en desarrollo</div>
+        <h1>Reportes — Reuniones</h1>
+        <div class="subtitle">Calendario y detalle por vendedor</div>
       </div>
-      <div class="toolbar">
-        <button onclick="window.location.href='index.html'">← Volver al Dashboard</button>
-      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" onclick="window.location.href='index.html'">← Volver</button>
     </div>
   </header>
 
-  <!-- 🔹 Contenido -->
   <main class="container">
-    <section class="card">
-      <span class="pill">Aún en desarrollo</span>
-      <h2>Próximamente</h2>
-      <p>
-        Estamos preparando nuevos reportes y visualizaciones para esta sección.
-        Vuelve pronto para ver las novedades.
-      </p>
-      <button onclick="window.location.href='index.html'">← Volver al Dashboard</button>
-    </section>
+    <div class="layout">
+
+      <!-- ========== CALENDAR COLUMN ========== -->
+      <div class="card" id="calendarCard" aria-label="Calendario">
+        <div class="calendar-header">
+          <div class="month-title" id="monthLabel">--</div>
+          <div class="nav">
+            <button class="nav-btn small" id="prevMonth" title="Mes anterior">◀</button>
+            <button class="nav-btn small" id="todayBtn" title="Ir a hoy">Hoy</button>
+            <button class="nav-btn small" id="nextMonth" title="Siguiente mes">▶</button>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div><span class="dot" style="background:var(--green)"></span>&nbsp;Día con reunión</div>
+          <div style="margin-left:auto" class="muted">Haz clic en un día para ver detalles</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="weekdays" aria-hidden="true">
+          <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        </div>
+
+        <div class="days" id="calendarDays" role="grid" aria-label="Días del mes"></div>
+
+        <div id="calendarFooter" class="muted" style="margin-top:10px;font-size:0.9rem"></div>
+      </div>
+
+      <!-- ========== DETAILS COLUMN ========== -->
+      <div>
+        <div class="card" id="detailCard">
+          <div id="detailContent">
+            <div class="empty">
+              Selecciona un día con reunión en el calendario para ver los detalles.
+            </div>
+          </div>
+        </div>
+
+        <!-- ayuda / notas -->
+        <div style="height:14px"></div>
+        <div class="card" style="margin-top:12px">
+          <div style="color:var(--muted)"><strong>Nota:</strong> los datos se extraen desde <code>data/reuniones.json</code>.</div>
+        </div>
+      </div>
+    </div>
   </main>
 
+  <!-- ===========================
+       Script: carga y render
+       =========================== -->
+  <script>
+    // rutas y util
+    const JSON_PATH = 'data/reuniones.json'; // archivo en tu repo
+    const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    let reunionesData = {};   // objeto cargado desde JSON
+    let eventsByDate = {};    // mapa yyyy-mm-dd -> meeting object
+    let current = new Date(); // fecha actual vista
+
+    // Normaliza string estado y devuelve clase + label
+    function normalizeEstado(raw) {
+      const s = (raw||'').toString().trim().toUpperCase();
+      if (s.indexOf('CUMPL') !== -1) return {label: 'CUMPLIÓ', cls: 'st-ok'};
+      if (s.indexOf('VIG') !== -1) return {label: 'VIGENTE', cls: 'st-vig'};
+      if (s.indexOf('NO') !== -1 && s.indexOf('NO') < 4) return {label:'NO CUMPLE', cls:'st-no'};
+      // fallback
+      if (s==='CUMPLIO' || s==='CUMPLIO' ) return {label:'CUMPLIÓ', cls:'st-ok'};
+      return {label: s || 'VIGENTE', cls: s ? (s==='VIGENTE' ? 'st-vig' : (s==='NO CUMPLE' ? 'st-no' : 'st-vig')) : 'st-vig'};
+    }
+
+    // formatea yyyy-mm-dd
+    function toKey(d) {
+      const y = d.getFullYear();
+      const m = (d.getMonth()+1).toString().padStart(2,'0');
+      const day = d.getDate().toString().padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseKeyToDate(key) {
+      const parts = key.split('-').map(Number);
+      return new Date(parts[0], parts[1]-1, parts[2]);
+    }
+
+    // --- Cargar JSON
+    async function loadData() {
+      try {
+        const res = await fetch(JSON_PATH, {cache: "no-store"});
+        if (!res.ok) throw new Error('No se pudo cargar reuniones.json (' + res.status + ')');
+        reunionesData = await res.json();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('calendarCard').innerHTML = '<div class="empty">Error cargando <strong>data/reuniones.json</strong>. Revisa que el archivo exista y la ruta sea correcta.</div>';
+        return;
+      }
+
+      // normalizar a eventosByDate
+      eventsByDate = {}; // limpiar
+      Object.keys(reunionesData).forEach(dateKey => {
+        const item = reunionesData[dateKey];
+        // si vendedores es array convertir. (seguro ya lo es)
+        eventsByDate[dateKey] = item;
+      });
+
+      buildCalendar(current.getFullYear(), current.getMonth());
+    }
+
+    // --- Construye calendario (mes: 0-11)
+    function buildCalendar(year, month) {
+      current = new Date(year, month, 1);
+      const monthLabel = document.getElementById('monthLabel');
+      monthLabel.textContent = `${MONTHS_ES[month]} ${year}`;
+
+      const daysContainer = document.getElementById('calendarDays');
+      daysContainer.innerHTML = '';
+
+      // calcular primer dia de semana (lunes=0)
+      const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+
+      // prev month placeholders
+      for (let i=0;i<firstWeekday;i++){
+        const el = document.createElement('div');
+        el.className = 'day empty';
+        el.innerHTML = `<div class="num"></div>`;
+        daysContainer.appendChild(el);
+      }
+
+      for (let d=1; d<=daysInMonth; d++){
+        const dt = new Date(year, month, d);
+        const key = toKey(dt);
+        const has = eventsByDate.hasOwnProperty(key);
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'day' + (has ? ' has-event' : '');
+        el.setAttribute('data-date', key);
+        el.setAttribute('aria-label', `Día ${d}${has?', reunión programada':''}`);
+        // contenido
+        const badge = has ? `<span class="badge">${Object.keys(eventsByDate[key].vendedores || {}).length} ●</span>` : '';
+        el.innerHTML = `<div class="num">${d}</div>${badge}`;
+        el.onclick = () => onDayClick(key);
+        daysContainer.appendChild(el);
+      }
+
+      // footer: mostrar breve resumen de mes
+      const footer = document.getElementById('calendarFooter');
+      const totalDaysWith = Object.keys(eventsByDate).filter(k=> {
+        const dt = parseKeyToDate(k);
+        return dt.getFullYear()===year && dt.getMonth()===month;
+      }).length;
+      footer.textContent = `${totalDaysWith} día(s) con reunión en ${MONTHS_ES[month]} ${year}`;
+    }
+
+    // evento: clic en día
+    function onDayClick(key) {
+      const content = document.getElementById('detailContent');
+      content.innerHTML = ''; // limpiar
+
+      if (!eventsByDate[key]) {
+        content.innerHTML = `<div class="empty">No hay reunión programada el ${formatDisplayDate(key)}.</div>`;
+        return;
+      }
+
+      const meeting = eventsByDate[key];
+      // panel meeting
+      const meetingDiv = document.createElement('div');
+      meetingDiv.className = 'meeting';
+      const tipo = meeting.tipo || '';
+      const agenda = meeting.agenda || '';
+      meetingDiv.innerHTML = `<div class="meta"><strong>${formatDisplayDate(key)}</strong> · <span class="muted">${tipo}</span></div>
+                              <h3>${escapeHtml(agenda || '— Sin agenda —')}</h3>`;
+      content.appendChild(meetingDiv);
+
+      // vendors list
+      const vendorsWrap = document.createElement('div');
+      vendorsWrap.className = 'vendors';
+
+      // meeting.vendedores puede ser array o object -> normalizar
+      let vendorsList = [];
+      if (Array.isArray(meeting.vendedores)) {
+        vendorsList = meeting.vendedores;
+      } else {
+        // si es object con claves
+        try {
+          vendorsList = Object.keys(meeting.vendedores).map(k => meeting.vendedores[k]);
+        } catch(e){ vendorsList = []; }
+      }
+
+      if (vendorsList.length === 0) {
+        const noV = document.createElement('div');
+        noV.className = 'empty';
+        noV.textContent = 'No hay participantes registrados para esta reunión.';
+        content.appendChild(noV);
+        return;
+      }
+
+      vendorsList.forEach(v => {
+        const vendorCard = document.createElement('div');
+        vendorCard.className = 'vendor';
+        const foto = v.foto ? `images/${v.foto}` : 'images/avatar-placeholder.png';
+        const name = v.nombre || v.zona || 'Sin nombre';
+        const zona = v.zona || '';
+        vendorCard.innerHTML = `
+          <img class="avatar" src="${foto}" alt="${escapeHtml(name)}">
+          <div class="info">
+            <h4>${escapeHtml(name)} ${zona ? `<span class="muted" style="font-weight:600;font-size:0.85rem"> · ${escapeHtml(zona)}</span>` : ''}</h4>
+            <div class="focos"></div>
+          </div>
+        `;
+        const focosEl = vendorCard.querySelector('.focos');
+
+        // focos pueden ser array o dict
+        let focosList = [];
+        if (Array.isArray(v.focos)) {
+          focosList = v.focos;
+        } else {
+          try { focosList = Object.keys(v.focos).map(k => v.focos[k]); } catch(e){ focosList = []; }
+        }
+
+        if (focosList.length === 0) {
+          const p = document.createElement('div');
+          p.className = 'muted';
+          p.textContent = 'Sin focos registrados.';
+          focosEl.appendChild(p);
+        } else {
+          focosList.forEach(foco => {
+            const estadoObj = normalizeEstado(foco.estado);
+            const focoName = foco.foco || '';
+            const div = document.createElement('div');
+            div.className = 'foco';
+            div.innerHTML = `<div style="flex:1">${escapeHtml(focoName)}</div>
+                              <div class="status ${estadoObj.cls}">${estadoObj.label}</div>`;
+            focosEl.appendChild(div);
+          });
+        }
+
+        vendorsWrap.appendChild(vendorCard);
+      });
+
+      content.appendChild(vendorsWrap);
+      // smooth scroll to details
+      document.getElementById('detailCard').scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    // formato legible
+    function formatDisplayDate(key) {
+      try{
+        const dt = parseKeyToDate(key);
+        return `${dt.getDate()} ${MONTHS_ES[dt.getMonth()]} ${dt.getFullYear()}`;
+      }catch(e){ return key; }
+    }
+
+    // escape básico para inyectar texto seguro
+    function escapeHtml(s){
+      if (!s) return '';
+      return s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // navigation
+    document.getElementById('prevMonth').addEventListener('click', ()=> {
+      const y = current.getFullYear(), m = current.getMonth();
+      const dt = new Date(y, m-1, 1);
+      buildCalendar(dt.getFullYear(), dt.getMonth());
+    });
+    document.getElementById('nextMonth').addEventListener('click', ()=> {
+      const y = current.getFullYear(), m = current.getMonth();
+      const dt = new Date(y, m+1, 1);
+      buildCalendar(dt.getFullYear(), dt.getMonth());
+    });
+    document.getElementById('todayBtn').addEventListener('click', ()=> {
+      const now = new Date();
+      buildCalendar(now.getFullYear(), now.getMonth());
+    });
+
+    // init
+    loadData();
+  </script>
 </body>
 </html>
-
