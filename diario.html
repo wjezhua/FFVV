@@ -170,15 +170,16 @@
     let current = new Date(); // fecha actual vista
 
     // Normaliza string estado y devuelve clase + label
-    function normalizeEstado(raw) {
-      const s = (raw||'').toString().trim().toUpperCase();
-      if (s.indexOf('CUMPL') !== -1) return {label: 'CUMPLIÓ', cls: 'st-ok'};
-      if (s.indexOf('VIG') !== -1) return {label: 'VIGENTE', cls: 'st-vig'};
-      if (s.indexOf('NO') !== -1 && s.indexOf('NO') < 4) return {label:'NO CUMPLIÓ', cls:'st-no'};
-      // fallback
-      if (s==='CUMPLIO' || s==='CUMPLIO' ) return {label:'CUMPLIÓ', cls:'st-ok'};
-      return {label: s || 'VIGENTE', cls: s ? (s==='VIGENTE' ? 'st-vig' : (s==='NO CUMPLIÓ' ? 'st-no' : 'st-vig')) : 'st-vig'};
-    }
+   function normalizeEstado(raw) {
+  const s = (raw||'').toString().trim().toUpperCase();
+
+  if (s.startsWith('NO CUMPL')) return {label:'NO CUMPLIÓ', cls:'st-no'};
+  if (s.startsWith('CUMPL'))    return {label:'CUMPLIÓ', cls:'st-ok'};
+  if (s.startsWith('VIG'))      return {label:'VIGENTE', cls:'st-vig'};
+
+  // fallback
+  return {label: s || 'VIGENTE', cls: s==='VIGENTE' ? 'st-vig' : (s==='NO CUMPLIÓ' ? 'st-no' : 'st-ok')};
+}
 
     // formatea yyyy-mm-dd
     function toKey(d) {
